@@ -160,10 +160,10 @@ class GoalPoseCommand(CommandTerm):
   def _resample_command(self, env_ids: torch.Tensor) -> None:
     n = len(env_ids)
 
-    # Only the offset from the robot is decided here; _update_command anchors it
-    # once the robot pose is current.
+    # Only the offset from the robot is decided here, in the robot's heading
+    # frame; _update_command rotates and anchors it once the pose is current.
     radius = torch.empty(n, device=self.device).uniform_(*self.cfg.radius_range)
-    bearing = torch.empty(n, device=self.device).uniform_(-math.pi, math.pi)
+    bearing = torch.empty(n, device=self.device).uniform_(*self.cfg.bearing_range)
     self._pending_offset[env_ids] = torch.stack(
       [radius * torch.cos(bearing), radius * torch.sin(bearing)], dim=1
     )
@@ -180,9 +180,17 @@ class GoalPoseCommand(CommandTerm):
     # Anchor any goal sampled since the last update on the current robot pose.
     pending = self._pending_place.nonzero().flatten()
     if len(pending) > 0:
-      self.goal_pos_w[pending] = (
-        self.robot.data.root_link_pos_w[pending, :2] + self._pending_offset[pending]
+      offset = self._pending_offset[pending]
+      heading = self.robot.data.heading_w[pending]
+      cos_p, sin_p = torch.cos(heading), torch.sin(heading)
+      offset_w = torch.stack(
+        [
+          cos_p * offset[:, 0] - sin_p * offset[:, 1],
+          sin_p * offset[:, 0] + cos_p * offset[:, 1],
+        ],
+        dim=1,
       )
+      self.goal_pos_w[pending] = self.robot.data.root_link_pos_w[pending, :2] + offset_w
       # Standing envs: goal == current pose so the robot learns to hold still.
       stand_ids = pending[self.is_standing_env[pending]]
       if len(stand_ids) > 0:
@@ -321,6 +329,10 @@ class GoalPoseCommandCfg(CommandTermCfg):
   radius_range: tuple[float, float] = (0.5, 3.0)
   """Distance range (meters) from the robot's current base position at which the
   goal position is sampled."""
+  bearing_range: tuple[float, float] = (-math.pi, math.pi)
+  """Direction range (radians) of the goal position, relative to the robot's
+  heading at placement. The default is a full circle, where rotating by the
+  heading changes nothing about the distribution."""
   yaw_range: tuple[float, float] = (-math.pi, math.pi)
   """Goal yaw sampling range (radians)."""
   rel_standing_envs: float = 0.0

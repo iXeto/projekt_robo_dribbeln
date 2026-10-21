@@ -10,7 +10,9 @@ from typing import TYPE_CHECKING
 
 import torch
 from mjlab.managers.scene_entity_config import SceneEntityCfg
-from mjlab.utils.lab_api.math import quat_apply, quat_apply_inverse, yaw_quat
+from mjlab.utils.lab_api.math import quat_apply_inverse, yaw_quat
+
+from mjlab_piplus.tasks.mdp.multi_command import resolve_goal_term
 
 if TYPE_CHECKING:
   from mjlab.envs import ManagerBasedRlEnv
@@ -61,6 +63,18 @@ def ball_vel_b(
   return quat_apply_inverse(q, vel_w)[:, :2]
 
 
+def goal_pos_b(
+  env: ManagerBasedRlEnv, command_name: str, sub_command_name: str | None = None
+) -> torch.Tensor:
+  """Goal xy relative to the base, in the robot's yaw frame.
+
+  Only the position: where the ball has to end up. The goal command's yaw is
+  meaningless for a ball, so it is left out of the observation.
+  """
+  term, _ = resolve_goal_term(env, command_name, sub_command_name)
+  return term.goal_command_b[:, :2]
+
+
 ##
 # Rewards.
 ##
@@ -80,25 +94,40 @@ def ball_in_front(
   return torch.exp(-err / std**2)
 
 
-def ball_velocity_tracking(
+def ball_goal_progress(
+  env: ManagerBasedRlEnv,
+  command_name: str,
+  max_speed: float,
+  sub_command_name: str | None = None,
+  ball_cfg: SceneEntityCfg = _BALL,
+) -> torch.Tensor:
+  """Ball speed towards the goal, in m/s, capped at ``max_speed``.
+
+  Negative when the ball rolls away from the goal. Uncapped below, so pushing
+  the ball the wrong way costs as much as it would have paid the right way.
+  """
+  term, _ = resolve_goal_term(env, command_name, sub_command_name)
+  ball = env.scene[ball_cfg.name]
+  to_goal = term.goal_pos_w - ball.data.root_link_pos_w[:, :2]
+  direction = to_goal / torch.norm(to_goal, dim=1, keepdim=True).clamp_min(1e-6)
+  speed = torch.sum(ball.data.root_link_lin_vel_w[:, :2] * direction, dim=1)
+  return torch.clamp(speed, max=max_speed)
+
+
+def ball_at_goal(
   env: ManagerBasedRlEnv,
   command_name: str,
   std: float,
-  robot_cfg: SceneEntityCfg = _ROBOT,
+  sub_command_name: str | None = None,
   ball_cfg: SceneEntityCfg = _BALL,
 ) -> torch.Tensor:
-  """The ball should move with the commanded walking velocity.
-
-  The twist command is in the base frame; it is rotated into the world by the
-  robot's yaw and compared with the ball's world xy velocity.
-  """
-  robot = env.scene[robot_cfg.name]
+  """``exp(-d^2 / std^2)`` of the ball's distance to the goal."""
+  term, _ = resolve_goal_term(env, command_name, sub_command_name)
   ball = env.scene[ball_cfg.name]
-  cmd_b = env.command_manager.get_command(command_name)[:, :2]
-  q = yaw_quat(robot.data.root_link_quat_w)
-  cmd_w = quat_apply(q, _to_xyz(cmd_b))[:, :2]
-  err = torch.sum(torch.square(ball.data.root_link_lin_vel_w[:, :2] - cmd_w), dim=1)
-  return torch.exp(-err / std**2)
+  d_sq = torch.sum(
+    torch.square(term.goal_pos_w - ball.data.root_link_pos_w[:, :2]), dim=1
+  )
+  return torch.exp(-d_sq / std**2)
 
 
 ##

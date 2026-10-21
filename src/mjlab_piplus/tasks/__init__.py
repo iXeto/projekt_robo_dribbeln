@@ -1,6 +1,8 @@
 from mjlab.tasks.registry import register_mjlab_task
 from mjlab.tasks.velocity.rl.runner import VelocityOnPolicyRunner
 
+from .chris_dribble_env_cfg import chris_dribble_env_cfg
+from .chris_dribble_rl_cfg import get_chris_dribble_rl_cfg
 from .dribble_mini_env_cfg import dribble_mini_env_cfg
 from .dribble_mini_rl_cfg import dribble_mini_rl_cfg
 from .piplus_multi_env_cfg import piplus_multi_env_cfg
@@ -52,5 +54,13 @@ register_mjlab_task(
   env_cfg=dribble_mini_env_cfg(),
   play_env_cfg=dribble_mini_env_cfg(play=True),
   rl_cfg=dribble_mini_rl_cfg(),
+  runner_cls=VelocityOnPolicyRunner,
+)
+# Dribble task built step by step from a copy of the velocity task.
+register_mjlab_task(
+  task_id="Mjlab-ChrisDribble-PiPlus",
+  env_cfg=chris_dribble_env_cfg(),
+  play_env_cfg=chris_dribble_env_cfg(play=True),
+  rl_cfg=get_chris_dribble_rl_cfg(),
   runner_cls=VelocityOnPolicyRunner,
 )
