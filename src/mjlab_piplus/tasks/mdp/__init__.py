@@ -1,6 +1,7 @@
 from mjlab_piplus.tasks.mdp.commands import *
 from mjlab_piplus.tasks.mdp.curriculums import *
 from mjlab_piplus.tasks.mdp.dr import *
+from mjlab_piplus.tasks.mdp.dribble import *
 from mjlab_piplus.tasks.mdp.getup import *
 from mjlab_piplus.tasks.mdp.imitation import *
 from mjlab_piplus.tasks.mdp.kick import *
