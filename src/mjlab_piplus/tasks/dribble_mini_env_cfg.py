@@ -66,6 +66,8 @@ def dribble_mini_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
   cfg.commands = {
     COMMAND_NAME: mdp.MultiCommandCfg(
       resampling_time_range=(0.0, 0.0),
+      # The wrapper's own flag gates its sub-terms' drawing too.
+      debug_vis=True,
       terms={
         GOAL_NAME: mdp.GoalPoseCommandCfg(
           entity_name="robot",
