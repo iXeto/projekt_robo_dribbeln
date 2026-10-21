@@ -1,6 +1,8 @@
 from mjlab.tasks.registry import register_mjlab_task
 from mjlab.tasks.velocity.rl.runner import VelocityOnPolicyRunner
 
+from .dribble_mini_env_cfg import dribble_mini_env_cfg
+from .dribble_mini_rl_cfg import dribble_mini_rl_cfg
 from .piplus_multi_env_cfg import piplus_multi_env_cfg
 from .piplus_multi_rl_cfg import get_piplus_multi_rl_cfg
 from .piplus_path_env_cfg import piplus_path_env_cfg
@@ -41,5 +43,14 @@ register_mjlab_task(
   env_cfg=piplus_standup_imitation_env_cfg(),
   play_env_cfg=piplus_standup_imitation_env_cfg(play=True),
   rl_cfg=get_piplus_standup_imitation_rl_cfg(),
+  runner_cls=VelocityOnPolicyRunner,
+)
+# Smoke test for dribbling: the velocity task plus a ball to keep in front of
+# the feet and move at the commanded velocity.
+register_mjlab_task(
+  task_id="Mjlab-DribbleMini-PiPlus",
+  env_cfg=dribble_mini_env_cfg(),
+  play_env_cfg=dribble_mini_env_cfg(play=True),
+  rl_cfg=dribble_mini_rl_cfg(),
   runner_cls=VelocityOnPolicyRunner,
 )
