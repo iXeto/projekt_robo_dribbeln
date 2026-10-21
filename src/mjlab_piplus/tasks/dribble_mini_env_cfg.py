@@ -3,6 +3,7 @@
 Built on top of the PiPlus velocity task from mjlab_piplus, which already walks.
 Added on top of it:
 
+* actuated arms (20 DoF, like the multi task) instead of the 12-DoF legs only;
 * a ball (RoboCup kid-size, from ``mjlab_piplus.objects``), placed just in front
   of the robot at every reset;
 * the ball's position and velocity in the robot's yaw frame, for actor and
@@ -37,6 +38,7 @@ from mjlab.managers.termination_manager import TerminationTermCfg
 from mjlab.tasks.velocity import mdp as vel_mdp
 
 from mjlab_piplus.objects import get_ball_cfg
+from mjlab_piplus.robot.piplus_constants import get_piplus_robot_cfg
 from mjlab_piplus.tasks import mdp
 from mjlab_piplus.tasks.piplus_velocity_env_cfg import piplus_velocity_env_cfg
 
@@ -58,6 +60,29 @@ def dribble_mini_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
   ##
   cfg.scene.entities["ball"] = get_ball_cfg()
   cfg.sim.nconmax = 60
+
+  ##
+  # Robot: actuate the arms (20 DoF instead of 12), as the multi task does, for
+  # balance while handling the ball. Changes the action and joint obs widths.
+  ##
+  cfg.scene.entities["robot"] = get_piplus_robot_cfg(with_arms=True)
+  # The velocity task's posture stds only name the leg joints. Arm values are
+  # the multi task's.
+  pose_params = cfg.rewards["pose"].params
+  pose_params["std_walking"] = {
+    **pose_params["std_walking"],
+    r".*_shoulder_pitch_joint": 0.25,
+    r".*_shoulder_roll_joint": 0.1,
+    r".*_upper_arm_joint": 0.05,
+    r".*_elbow_joint": 0.2,
+  }
+  pose_params["std_running"] = {
+    **pose_params["std_running"],
+    r".*_shoulder_pitch_joint": 0.35,
+    r".*_shoulder_roll_joint": 0.15,
+    r".*_upper_arm_joint": 0.05,
+    r".*_elbow_joint": 0.25,
+  }
 
   ##
   # Command: a goal position for the ball, replacing the walking twist. One goal

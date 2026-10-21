@@ -1,8 +1,8 @@
 from mjlab.rl import RslRlModelCfg, RslRlOnPolicyRunnerCfg, RslRlPpoAlgorithmCfg
 
-# Smoke test length: enough to see whether the reward moves and to render a
-# checkpoint, not enough for a good policy.
-MAX_ITERATIONS = 300
+# Short test length: 300 iterations showed the ball moving towards the goal but
+# the robot still falling often, so this gives the policy more time.
+MAX_ITERATIONS = 900
 
 
 def dribble_mini_rl_cfg() -> RslRlOnPolicyRunnerCfg:
