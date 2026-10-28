@@ -32,6 +32,7 @@ from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
 import torch
 from mjlab.managers.command_manager import CommandTerm, CommandTermCfg
 
+from mjlab_piplus.tasks.mdp.commands import GoalPoseCommand
 from mjlab_piplus.tasks.mdp.push_gui import PushGui
 
 if TYPE_CHECKING:
@@ -612,11 +613,15 @@ def stand_mask(env: ManagerBasedRlEnv, command_name: str) -> torch.Tensor:
 
   Queries the stand command when ``command_name`` is a :class:`MultiCommand`,
   and otherwise falls back to the stand flag at index 3 of
-  ``UniformVelocityCommandWithStop``.
+  ``UniformVelocityCommandWithStop``. A bare :class:`GoalPoseCommand` never
+  stands, as under a ``MultiCommand``: its index 3 is ``sin(yaw_err)``, not a
+  flag.
   """
   term = env.command_manager.get_term(command_name)
   if isinstance(term, MultiCommand):
     return term.stand_mask
+  if isinstance(term, GoalPoseCommand):
+    return torch.zeros(env.num_envs, dtype=torch.bool, device=env.device)
   assert term is not None, f"Command '{command_name}' not found."
   return term.command[:, 3] > 0.5
 
@@ -625,7 +630,8 @@ def velocity_active(env: ManagerBasedRlEnv, command_name: str) -> torch.Tensor:
   """``(num_envs,)`` bool: is the velocity command the active type?
 
   All True for a non-composite command term, so terms that use this keep their
-  behavior in the standalone velocity task.
+  behavior in the standalone velocity task. All False for a bare
+  :class:`GoalPoseCommand`, which commands no twist.
   """
   term = env.command_manager.get_term(command_name)
   if isinstance(term, MultiCommand):
@@ -633,6 +639,8 @@ def velocity_active(env: ManagerBasedRlEnv, command_name: str) -> torch.Tensor:
     if name not in term.terms:
       return torch.zeros(env.num_envs, dtype=torch.bool, device=env.device)
     return term.active_mask(name)
+  if isinstance(term, GoalPoseCommand):
+    return torch.zeros(env.num_envs, dtype=torch.bool, device=env.device)
   return torch.ones(env.num_envs, dtype=torch.bool, device=env.device)
 
 
@@ -640,10 +648,13 @@ def velocity_command(env: ManagerBasedRlEnv, command_name: str) -> torch.Tensor:
   """``(num_envs, 3)`` commanded ``[vx, vy, wz]``.
 
   Zeros on envs whose active command type is not the velocity command, so a
-  path- or stand-commanded env reads a zero twist.
+  path- or stand-commanded env reads a zero twist. Zeros for a bare
+  :class:`GoalPoseCommand` too, whose first three entries are a goal offset.
   """
   term = env.command_manager.get_term(command_name)
   if isinstance(term, MultiCommand):
     return term.velocity_command
+  if isinstance(term, GoalPoseCommand):
+    return torch.zeros(env.num_envs, 3, device=env.device)
   assert term is not None, f"Command '{command_name}' not found."
   return term.command[:, :3]

@@ -133,7 +133,7 @@ def melika_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
           entity_name="robot",
           debug_vis=True,
           resampling_time_range=(EPISODE_LENGTH_S, EPISODE_LENGTH_S),
-          radius_range=(1.0, 3.0),
+          radius_range=(1.0, 5.0),
           bearing_range=(-math.pi / 4, math.pi / 4),
         ),
       },
