@@ -267,19 +267,12 @@ def chris_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
         "chris_dribble": 1.0,
       },
       terms={
-        # Owns the ball outright: places it near the robot while driving an
-        # env, parks it at park_position while not.
-        "chris_dribble": pi_mdp.chris_dribbleCommandCfg(
+        # Goal position for the ball; the ball itself is placed by the reset_ball event.
+        "chris_dribble": pi_mdp.GoalPoseCommandCfg(
           entity_name="robot",
           debug_vis=True,
-          resampling_time_range=(8.0, 16.0),
-          distance_range=(0.3, 1.2),
-          placement_cone_deg=60.0,
-          direction_cone_deg=135.0,
-          strength_range=(0.5, 5.0),
-          park_position=(100.0, 100.0),
-          contact_speed=0.5,
-          window_s=1.0,
+          resampling_time_range=(10.0, 25.0),
+          radius_range=(1.0, 5.0)
         ),
       },
     )
