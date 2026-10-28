@@ -1,5 +1,5 @@
 """Multi-command env: one policy driven by a velocity, path, footstep, goal-pose,
-kick or stand command.
+chris_dribble or stand command.
 
 A single ``MultiCommand`` assigns each env one of three command types and
 switches between them during the episode, so the policy learns the hand-over
@@ -9,11 +9,11 @@ The policy sees every sub-command concatenated with the inactive blocks zeroed,
 prefixed by a one-hot naming the active type:
 
     [one_hot(6) | velocity(3) | path(2N + 2) | footstep(8M) | goal_pose(4)
-     | kick(3)]
+     | chris_dribble(3)]
 
 The ball's position and velocity are *not* in there: they are a sensed quantity
 on a camera's timescale, so they ride in their own observation term with a much
-longer delay, zeroed whenever the kick command is not the active type.
+longer delay, zeroed whenever the chris_dribble command is not the active type.
 
 Standing is its own command type here, not a flag on the velocity command, so a
 zero-velocity *velocity* command means walk-in-place. Reward terms that only
@@ -102,16 +102,16 @@ WALK_FREQUENCY = 1.75
 # to make. Note the caps are a bare clamp, so raising this also raises those
 # two terms' per-step head-room (at weight 2.0: 1.6 -> 3.0 at 0.8 -> 1.5),
 # which shifts their share against the weight-1.0 goal/alignment terms.
-# (The kick's ``max_speed`` is a different thing: closing speed on the ball.)
+# (The chris_dribble's ``max_speed`` is a different thing: closing speed on the ball.)
 MAX_COMMANDED_SPEED = 0.8
 
-# Angular tolerance (Gaussian sigma, radians) of the kick's signed aim reward,
-# narrowed over training by the ``narrow_kick_aim`` curriculum. Both kick aim
+# Angular tolerance (Gaussian sigma, radians) of the chris_dribble's signed aim reward,
+# narrowed over training by the ``narrow_chris_dribble_aim`` curriculum. Both chris_dribble aim
 # terms are signed: outside the tolerance they pay *negative*, so a tolerance
-# that tightens faster than the policy can follow turns kicking into a net loss
+# that tightens faster than the policy can follow turns chris_dribbleing into a net loss
 # and the robot stops attempting it. Hence a wide start and a long runway.
-KICK_DIR_SIGMA_START = math.radians(60.0)
-KICK_DIR_SIGMA_END = math.radians(20.0)
+chris_dribble_DIR_SIGMA_START = math.radians(60.0)
+chris_dribble_DIR_SIGMA_END = math.radians(20.0)
 
 # Weight presets, spelled out so a reward's applicability reads at a glance.
 _OFF = {
@@ -119,14 +119,14 @@ _OFF = {
   "path": 0.0,
   "footstep": 0.0,
   "goal_pose": 0.0,
-  "kick": 0.0,
+  "chris_dribble": 0.0,
   "stand": 0.0,
 }
 VELOCITY_AND_STAND = {**_OFF, "velocity": 1.0, "stand": 0.25}
 PATH_ONLY = {**_OFF, "path": 1.0}
 FOOTSTEP_ONLY = {**_OFF, "footstep": 1.0}
 GOAL_POSE_ONLY = {**_OFF, "goal_pose": 1.0}
-KICK_ONLY = {**_OFF, "kick": 1.0}
+chris_dribble_ONLY = {**_OFF, "chris_dribble": 1.0}
 # Full weight everywhere, but tripled under a stand command: holding the default
 # pose is most of what "stand" asks for, while under the moving commands the same
 # term pulls against the gait and stays at its nominal weight.
@@ -201,20 +201,20 @@ def chris_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
       params={"frequency": WALK_FREQUENCY, "command_name": "command"},
     ),
     # [one_hot(6) | velocity(3) | path(2N+2) | footstep(8M) | goal_pose(4)
-    #  | kick(3)], inactive blocks zeroed.
+    #  | chris_dribble(3)], inactive blocks zeroed.
     "command": ObservationTermCfg(
       func=mdp.generated_commands,
       params={"command_name": "command"},
     ),
-    # Ball position and velocity in the base frame, zeroed off the kick
-    # command. Its own term rather than part of the kick command block: it is
+    # Ball position and velocity in the base frame, zeroed off the chris_dribble
+    # command. Its own term rather than part of the chris_dribble command block: it is
     # sensed, and on a camera's timescale -- the delay is applied inside the
     # term (see ``pi_mdp.ball_state``), not through delay_min_lag/delay_max_lag.
     "ball": ObservationTermCfg(
       func=pi_mdp.ball_state,
       params={
         "command_name": "command",
-        "sub_command_name": "kick",
+        "sub_command_name": "chris_dribble",
         "min_lag": BALL_DELAY_MIN,
         "max_lag": BALL_DELAY_MAX,
       },
@@ -322,7 +322,7 @@ def chris_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
         "path": 0.15,
         "goal_pose": 0.15,
         "footstep": 0.15,
-        "kick": 0.25,
+        "chris_dribble": 0.25,
         "stand": 0.10,
       },
       terms={
@@ -360,11 +360,11 @@ def chris_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
         ),
         # Owns the ball outright: places it near the robot while driving an
         # env, parks it at park_position while not.
-        "kick": pi_mdp.KickCommandCfg(
+        "chris_dribble": pi_mdp.chris_dribbleCommandCfg(
           entity_name="robot",
           debug_vis=True,
           # Long enough for several ball lives: the ball comes back after every
-          # kick, so this only bounds how long the kick task is handed out for.
+          # chris_dribble, so this only bounds how long the chris_dribble task is handed out for.
           resampling_time_range=(8.0, 16.0),
           # Placed within a 60 degree fan either side of where the robot is
           # facing, at most 1.2 m away whatever the bearing.
@@ -372,11 +372,11 @@ def chris_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
           placement_cone_deg=60.0,
           # Target direction within this cone of the robot's heading at
           # placement -- a direction it can plausibly hit from where it stands.
-          # Widen towards 180 once kicking works to demand turning the ball.
+          # Widen towards 180 once chris_dribbleing works to demand turning the ball.
           direction_cone_deg=135.0,
           strength_range=(0.5, 5.0),
           park_position=(100.0, 100.0),
-          # Ball speed that counts as a strike, and how long the kick is scored
+          # Ball speed that counts as a strike, and how long the chris_dribble is scored
           # for afterwards before the ball is re-placed.
           contact_speed=0.5,
           window_s=1.0,
@@ -763,108 +763,108 @@ def chris_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     ),
   }
 
-  # -- Kick -----------------------------------------------------------------
-  kick_rewards = {
+  # -- chris_dribble -----------------------------------------------------------------
+  chris_dribble_rewards = {
     # One repeating cycle per ball: approach, strike, then a short window over
-    # which the kick is scored densely before the ball is re-placed and the next
-    # approach begins (see ``mdp/kick.py``). The window and the respawn are what
-    # make kicking worth more than loitering next to the ball -- the previous
+    # which the chris_dribble is scored densely before the ball is re-placed and the next
+    # approach begins (see ``mdp/chris_dribble.py``). The window and the respawn are what
+    # make chris_dribbleing worth more than loitering next to the ball -- the previous
     # design paid a single lump at contact and then nothing, so the approach was
-    # worth more than the kick it was supposed to set up.
+    # worth more than the chris_dribble it was supposed to set up.
     #
-    # Rough budget for one good kick, at these weights: contact +2.5 (until the
+    # Rough budget for one good chris_dribble, at these weights: contact +2.5 (until the
     # curriculum drops it), impact +6.0 over the 1 s window, direction +2.0 --
     # against roughly 1.5/s of approach reward on the way in. Keep that ordering
-    # when retuning: Episode_Reward/kick_impact should dominate
-    # Episode_Reward/kick_approach once the policy is kicking at all.
-    "kick_approach": MultiRewardTermCfg(
-      func=pi_mdp.kick_approach,
+    # when retuning: Episode_Reward/chris_dribble_impact should dominate
+    # Episode_Reward/chris_dribble_approach once the policy is chris_dribbleing at all.
+    "chris_dribble_approach": MultiRewardTermCfg(
+      func=pi_mdp.chris_dribble_approach,
       weight=3.0,
       params={
         "command_name": "command",
-        "sub_command_name": "kick",
+        "sub_command_name": "chris_dribble",
         # Speed toward the ball in m/s, capped: no bonus for charging it.
         "max_speed": 2.0,
         # Cubed cosine, so only a well-aimed approach gets most of the credit.
         "alignment_power": 3.0,
       },
-      command_weights=KICK_ONLY,
+      command_weights=chris_dribble_ONLY,
     ),
-    "kick_face_ball": MultiRewardTermCfg(
-      func=pi_mdp.kick_face_ball,
+    "chris_dribble_face_ball": MultiRewardTermCfg(
+      func=pi_mdp.chris_dribble_face_ball,
       weight=0.5,
-      params={"command_name": "command", "sub_command_name": "kick"},
-      command_weights=KICK_ONLY,
+      params={"command_name": "command", "sub_command_name": "chris_dribble"},
+      command_weights=chris_dribble_ONLY,
     ),
-    "kick_idle": MultiRewardTermCfg(
-      func=pi_mdp.kick_idle,
+    "chris_dribble_idle": MultiRewardTermCfg(
+      func=pi_mdp.chris_dribble_idle,
       # Kills the do-nothing optimum: standing still with a ball to fetch has to
       # cost something, or refusing to engage is free.
       weight=-1.0,
       params={
         "command_name": "command",
-        "sub_command_name": "kick",
+        "sub_command_name": "chris_dribble",
         "vel_threshold": 0.1,
         # Inside this radius the robot is planting to swing, not loitering.
         "near_dist": 0.35,
       },
-      command_weights=KICK_ONLY,
+      command_weights=chris_dribble_ONLY,
     ),
-    "kick_foot_alignment": MultiRewardTermCfg(
-      func=pi_mdp.kick_foot_alignment,
-      weight=-0.25,
+    "chris_dribble_foot_alignment": MultiRewardTermCfg(
+      func=pi_mdp.chris_dribble_foot_alignment,
+      weight=-0,
       params={
         "command_name": "command",
-        "sub_command_name": "kick",
+        "sub_command_name": "chris_dribble",
         # Start turning the foot to line up well before the last half metre.
         "close_dist": 0.9,
       },
-      command_weights=KICK_ONLY,
+      command_weights=chris_dribble_ONLY,
     ),
-    "kick_contact": MultiRewardTermCfg(
-      func=pi_mdp.kick_contact,
-      # Bootstrap only -- dropped to 0 by ``drop_kick_contact`` below. Left on,
+    "chris_dribble_contact": MultiRewardTermCfg(
+      func=pi_mdp.chris_dribble_contact,
+      # Bootstrap only -- dropped to 0 by ``drop_chris_dribble_contact`` below. Left on,
       # a flat payout per touch makes a stream of weak taps competitive with
-      # real kicks, since every touch buys a fresh ball.
-      weight=2.5,
+      # real chris_dribbles, since every touch buys a fresh ball.
+      weight=0,
       params={
         "command_name": "command",
-        "sub_command_name": "kick",
+        "sub_command_name": "chris_dribble",
         "wrong_foot_penalty": 0.5,
       },
-      command_weights=KICK_ONLY,
+      command_weights=chris_dribble_ONLY,
     ),
-    "kick_impact": MultiRewardTermCfg(
-      func=pi_mdp.kick_impact,
+    "chris_dribble_impact": MultiRewardTermCfg(
+      func=pi_mdp.chris_dribble_impact,
       # The payload: paid every step of the window, so this is ~weight x
-      # window_s for a perfect kick and as negative for a well-struck one sent
+      # window_s for a perfect chris_dribble and as negative for a well-struck one sent
       # the wrong way.
-      weight=6.0,
+      weight=0.5,
       params={
         "command_name": "command",
-        "sub_command_name": "kick",
-        # Aim tolerance in radians, narrowed by ``narrow_kick_aim`` below.
-        "dir_sigma": KICK_DIR_SIGMA_START,
+        "sub_command_name": "chris_dribble",
+        # Aim tolerance in radians, narrowed by ``narrow_chris_dribble_aim`` below.
+        "dir_sigma": chris_dribble_DIR_SIGMA_START,
         # Speed tolerance relative to the commanded strength, so 5 m/s is not
         # held to the same absolute precision as 1 m/s.
         "speed_rel_std": 0.35,
-        "min_ball_speed": 0.2,
+        "min_ball_speed": 0.01,
         # A toe-poke still pays a quarter of a clean side-foot contact: it has
         # to be discoverable before it can be refined away.
         "style_floor": 0.25,
       },
-      command_weights=KICK_ONLY,
+      command_weights=chris_dribble_ONLY,
     ),
-    "kick_direction": MultiRewardTermCfg(
-      func=pi_mdp.kick_direction,
+    "chris_dribble_direction": MultiRewardTermCfg(
+      func=pi_mdp.chris_dribble_direction,
       weight=2.0,
       params={
         "command_name": "command",
-        "sub_command_name": "kick",
-        "dir_sigma": KICK_DIR_SIGMA_START,
-        "min_ball_speed": 0.2,
+        "sub_command_name": "chris_dribble",
+        "dir_sigma": chris_dribble_DIR_SIGMA_START,
+        "min_ball_speed": 0.5,
       },
-      command_weights=KICK_ONLY,
+      command_weights=chris_dribble_ONLY,
     ),
   }
 
@@ -966,7 +966,7 @@ def chris_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     # Encourage feet to be at target height when the foot velocity is high
     # (i.e. during swing).
     # The three gait terms are gated on being upright as well: face down, the
-    # gait clock keeps running and would pay for kicking the floor on the beat,
+    # gait clock keeps running and would pay for chris_dribbleing the floor on the beat,
     # and the slip penalty would charge for exactly the ground contact the arms
     # and feet need to push off with. All three come back as the robot rises.
     "foot_gait": RewardTermCfg(
@@ -1023,7 +1023,7 @@ def chris_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     | path_rewards
     | footstep_rewards
     | goal_pose_rewards
-    | kick_rewards
+    | chris_dribble_rewards
     | stability_rewards
     | safety_rewards
     | gait_rewards
@@ -1073,27 +1073,27 @@ def chris_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
   # Curriculum
   ##
   curriculum = {
-    # Kick bootstrap off: the flat payout per contact exists only to get the
+    # chris_dribble bootstrap off: the flat payout per contact exists only to get the
     # policy to touch the ball at all. Once it does, the quality terms should
-    # drive the rest, or weak taps stay competitive with real kicks.
-    "drop_kick_contact": CurriculumTermCfg(
+    # drive the rest, or weak taps stay competitive with real chris_dribbles.
+    "drop_chris_dribble_contact": CurriculumTermCfg(
       func=pi_mdp.reward_weight,
       params={
-        "reward_name": "kick_contact",
+        "reward_name": "chris_dribble_contact",
         "weight_stages": [{"step": 1500 * 24, "weight": 0.0}],
       },
     ),
     # Then tighten the aim tolerance, on both aim terms at once so they keep
-    # scoring the same kick the same way.
-    "narrow_kick_aim": CurriculumTermCfg(
+    # scoring the same chris_dribble the same way.
+    "narrow_chris_dribble_aim": CurriculumTermCfg(
       func=pi_mdp.reward_param_linear,
       params={
-        "reward_names": ["kick_impact", "kick_direction"],
+        "reward_names": ["chris_dribble_impact", "chris_dribble_direction"],
         "param_name": "dir_sigma",
         "start_step": 1500 * 24,
         "end_step": 6400 * 24,
-        "start_value": KICK_DIR_SIGMA_START,
-        "end_value": KICK_DIR_SIGMA_END,
+        "start_value": chris_dribble_DIR_SIGMA_START,
+        "end_value": chris_dribble_DIR_SIGMA_END,
       },
     ),
   }
@@ -1240,19 +1240,19 @@ def chris_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
       func=pi_mdp.phase_metric,
       params={"frequency": WALK_FREQUENCY, "command_name": "command"},
     )
-    # Kick diagnostics: how fast the ball is actually going, and where in the
-    # ball cycle the robot is (0 = not kicking, 1 = approaching, 2 = inside the
-    # post-kick scoring window). Play only -- in training these would just be
-    # averaged over thousands of envs in different phases. The per-kick numbers
+    # chris_dribble diagnostics: how fast the ball is actually going, and where in the
+    # ball cycle the robot is (0 = not chris_dribbleing, 1 = approaching, 2 = inside the
+    # post-chris_dribble scoring window). Play only -- in training these would just be
+    # averaged over thousands of envs in different phases. The per-chris_dribble numbers
     # (peak speed, aim error, style) are logged by the command itself and show
-    # up in training under Metrics/kick_*.
-    metrics["kick_ball_speed"] = MetricsTermCfg(
-      func=pi_mdp.kick_ball_speed,
-      params={"command_name": "command", "sub_command_name": "kick"},
+    # up in training under Metrics/chris_dribble_*.
+    metrics["chris_dribble_ball_speed"] = MetricsTermCfg(
+      func=pi_mdp.chris_dribble_ball_speed,
+      params={"command_name": "command", "sub_command_name": "chris_dribble"},
     )
-    metrics["kick_phase"] = MetricsTermCfg(
-      func=pi_mdp.kick_phase,
-      params={"command_name": "command", "sub_command_name": "kick"},
+    metrics["chris_dribble_phase"] = MetricsTermCfg(
+      func=pi_mdp.chris_dribble_phase,
+      params={"command_name": "command", "sub_command_name": "chris_dribble"},
       # 0/1/2 is a state, not a quantity: averaging it over an episode says
       # nothing, so report where the episode ended up.
       reduce="last",

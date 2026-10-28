@@ -1,4 +1,4 @@
-"""Kick command: send the ball off in a commanded direction at a commanded speed.
+"""chris_dribble command: send the ball off in a commanded direction at a commanded speed.
 
 The command owns the ball. While it is driving an env it places the ball near
 the robot; while it is not, it parks the ball far away so the other command
@@ -6,13 +6,13 @@ types never trip over it. That makes the ball's presence in the scene entirely
 this command's business.
 
 What the policy sees is split in two, because the two halves are different
-kinds of thing. The *command* is which way to kick and how hard:
+kinds of thing. The *command* is which way to chris_dribble and how hard:
 
     [cos(dir_err), sin(dir_err), strength]
 
-``dir_err`` is the commanded kick direction relative to the robot's heading,
+``dir_err`` is the commanded chris_dribble direction relative to the robot's heading,
 encoded as a unit vector because it wraps. ``MultiCommand`` zeroes the whole
-block on envs the kick command is not driving.
+block on envs the chris_dribble command is not driving.
 
 Where the ball is and how fast it moves is *sensed*, not commanded, so it is a
 separate observation term (:class:`ball_state`) with its own, much longer
@@ -23,12 +23,12 @@ The ball lifecycle
 ------------------
 The ball lives in a repeating cycle, driven by contact rather than by a timer:
 
-    place -> approach -> strike -> post-kick window -> place -> ...
+    place -> approach -> strike -> post-chris_dribble window -> place -> ...
 
 A strike is detected from the *ball's* speed, not from a foot/ball contact
 sensor: a fast strike can touch and separate again inside a single control
 step's physics substeps, which a sensor sampled once per step silently misses.
-The strike opens a short window (``window_s``) over which the kick is scored
+The strike opens a short window (``window_s``) over which the chris_dribble is scored
 densely, and when it closes the ball is re-placed near the robot with a fresh
 target direction and strength -- *without* ending the episode.
 
@@ -36,39 +36,39 @@ That cycle is the whole point of the design, and the fix for the reward flaw it
 replaces. The previous version had two disjoint phases: a dense approach reward
 until the ball moved, then a single one-off payout and nothing at all for the
 rest of the command period (plus a "stand still" request whose tight posture
-reward is hard to satisfy while recovering from a kick, and the ever-present
--200 for falling). Kicking therefore *ended* the robot's earning opportunity
+reward is hard to satisfy while recovering from a chris_dribble, and the ever-present
+-200 for falling). chris_dribbleing therefore *ended* the robot's earning opportunity
 while carrying all the fall risk, so the best policy was to walk up to the ball
-and dawdle next to it. With the cycle, a kick is the only way to reach the
+and dawdle next to it. With the cycle, a chris_dribble is the only way to reach the
 richest part of the reward, and finishing one immediately hands the robot
-another ball to kick -- delay is now strictly worse than kicking.
+another ball to chris_dribble -- delay is now strictly worse than chris_dribbleing.
 
 Reward design
 -------------
-Adapted from bit-bots/AMP_mjlab's ``kick_env_cfg.py`` (branch
-``amp-soccer-kick``), with the state that lives on ``env`` there kept on this
+Adapted from bit-bots/AMP_mjlab's ``chris_dribble_env_cfg.py`` (branch
+``amp-soccer-chris_dribble``), with the state that lives on ``env`` there kept on this
 command instead -- it already owns the ball, so it also owns the cycle:
 
-* ``kick_approach``   -- speed toward the ball along a cubed cosine alignment,
+* ``chris_dribble_approach``   -- speed toward the ball along a cubed cosine alignment,
                          measured from a point offset toward the foot that
                          should strike. Signed, so backing off is penalized and
                          oscillation nets zero.
-* ``kick_face_ball``  -- keep the ball ahead of the torso while approaching.
-* ``kick_idle``       -- flat penalty for standing still with an untouched ball
+* ``chris_dribble_face_ball``  -- keep the ball ahead of the torso while approaching.
+* ``chris_dribble_idle``       -- flat penalty for standing still with an untouched ball
                          still out of reach.
-* ``kick_foot_alignment`` -- penalty for a foot's inside (medial) edge not
+* ``chris_dribble_foot_alignment`` -- penalty for a foot's inside (medial) edge not
                          facing the ball when close: discourages toe-pokes.
-* ``kick_contact``    -- one-shot bootstrap payout on the strike, halved into a
+* ``chris_dribble_contact``    -- one-shot bootstrap payout on the strike, halved into a
                          penalty if the wrong foot did it. Meant to be dropped
-                         by curriculum once kicking is discovered.
-* ``kick_impact``     -- dense over the window: contact style x speed match x
-                         signed aim. This is the payload of a good kick.
-* ``kick_direction``  -- dense over the window: signed aim on its own, so aim
+                         by curriculum once chris_dribbleing is discovered.
+* ``chris_dribble_impact``     -- dense over the window: contact style x speed match x
+                         signed aim. This is the payload of a good chris_dribble.
+* ``chris_dribble_direction``  -- dense over the window: signed aim on its own, so aim
                          has a gradient even when style or foot were wrong.
 
-Two deliberate departures from the template. It has no commanded kick speed and
+Two deliberate departures from the template. It has no commanded chris_dribble speed and
 so rewards raw (tanh-saturated) power; this task does command a speed, so
-``kick_impact`` scores the ball's peak speed against ``strength`` instead. And
+``chris_dribble_impact`` scores the ball's peak speed against ``strength`` instead. And
 its cross-foot-touch penalty is not carried over: it needs two extra per-foot
 ball contact sensors, and the window here closes 1 s after the *first* touch,
 which leaves far less room for both feet to fumble at the ball.
@@ -97,37 +97,37 @@ if TYPE_CHECKING:
   from mjlab.viewer.debug_visualizer import DebugVisualizer
 
 __all__ = [
-  "KickCommand",
-  "KickCommandCfg",
+  "chris_dribbleCommand",
+  "chris_dribbleCommandCfg",
   "ball_state",
-  "kick_approach",
-  "kick_ball_speed",
-  "kick_contact",
-  "kick_direction",
-  "kick_face_ball",
-  "kick_foot_alignment",
-  "kick_idle",
-  "kick_impact",
-  "kick_phase",
+  "chris_dribble_approach",
+  "chris_dribble_ball_speed",
+  "chris_dribble_contact",
+  "chris_dribble_direction",
+  "chris_dribble_face_ball",
+  "chris_dribble_foot_alignment",
+  "chris_dribble_idle",
+  "chris_dribble_impact",
+  "chris_dribble_phase",
 ]
 
 
-def select_kick_foot_is_left(
+def select_chris_dribble_foot_is_left(
   ball_pos_b: torch.Tensor,
-  kick_dir_b: torch.Tensor,
+  chris_dribble_dir_b: torch.Tensor,
   angle_threshold: float,
 ) -> torch.Tensor:
   """Which foot *should* strike, from the ball position and target direction.
 
   Both inputs are in the robot's base frame (x forward, y left). Within
   ``angle_threshold`` radians of straight ahead, take the foot on the ball's own
-  side -- a roughly forward kick is played with whichever foot is nearer.
-  Outside that band the target angle decides on its own: a kick angled to the
+  side -- a roughly forward chris_dribble is played with whichever foot is nearer.
+  Outside that band the target angle decides on its own: a chris_dribble angled to the
   left is played with the right foot swinging across the body, one angled right
   with the left foot. A hard rule, not a blend, so every consumer (approach
   offset, foot-correctness at contact) agrees on the answer at any instant.
   """
-  angle = torch.atan2(kick_dir_b[:, 1], kick_dir_b[:, 0])
+  angle = torch.atan2(chris_dribble_dir_b[:, 1], chris_dribble_dir_b[:, 0])
   in_band = angle.abs() <= angle_threshold
   return torch.where(in_band, ball_pos_b[:, 1] >= 0.0, angle < 0.0)
 
@@ -141,7 +141,7 @@ def foot_medial_alignment(
   """Cosine in [-1, 1] between a foot's medial axis and the foot->ball direction.
 
   +1 means the inside of the foot points straight at the ball (the side-foot
-  kick), 0 the front or back of the foot, -1 the outside edge.
+  chris_dribble), 0 the front or back of the foot, -1 the outside edge.
 
   ``medial_sign`` says whether the body's local +Y is the inside direction for
   that foot. In piplus.xml both ankle-roll links share local +Y = world +Y at
@@ -158,10 +158,10 @@ def foot_medial_alignment(
   return torch.sum(medial_xy * direction, dim=-1)
 
 
-class KickCommand(CommandTerm):
-  cfg: KickCommandCfg
+class chris_dribbleCommand(CommandTerm):
+  cfg: chris_dribbleCommandCfg
 
-  def __init__(self, cfg: KickCommandCfg, env: ManagerBasedRlEnv) -> None:
+  def __init__(self, cfg: chris_dribbleCommandCfg, env: ManagerBasedRlEnv) -> None:
     super().__init__(cfg, env)
     self.robot: Entity = env.scene[cfg.entity_name]
     self.ball: Entity = env.scene[cfg.ball_entity_name]
@@ -174,13 +174,13 @@ class KickCommand(CommandTerm):
     self._window_steps = max(1, round(cfg.window_s / env.step_dt))
     self._select_angle = math.radians(cfg.foot_select_angle_deg)
 
-    # Commanded kick: a world-frame heading and a target ball speed. Both are
+    # Commanded chris_dribble: a world-frame heading and a target ball speed. Both are
     # redrawn on every ball placement, not just on command resample.
-    self.kick_dir_w = torch.zeros(self.num_envs, device=self.device)
+    self.chris_dribble_dir_w = torch.zeros(self.num_envs, device=self.device)
     self.strength = torch.zeros(self.num_envs, device=self.device)
 
     # Ball lifecycle state. ``touched`` is the phase flag (approach vs. window),
-    # ``window_left`` counts the post-kick scoring window down in steps, and
+    # ``window_left`` counts the post-chris_dribble scoring window down in steps, and
     # ``style``/``foot_correct`` are frozen at the moment of the strike.
     self.touched = torch.zeros(self.num_envs, dtype=torch.bool, device=self.device)
     self.window_left = torch.zeros(self.num_envs, dtype=torch.long, device=self.device)
@@ -189,7 +189,7 @@ class KickCommand(CommandTerm):
     self.foot_correct = torch.zeros(self.num_envs, dtype=torch.bool, device=self.device)
     # Fastest the ball got since the strike. Scoring the instantaneous velocity
     # would chase a ball that is already decelerating under rolling friction;
-    # the peak is what the kick actually produced.
+    # the peak is what the chris_dribble actually produced.
     self.peak_speed = torch.zeros(self.num_envs, device=self.device)
     self.peak_vel_w = torch.zeros(self.num_envs, 2, device=self.device)
 
@@ -228,7 +228,7 @@ class KickCommand(CommandTerm):
     # sim.forward(), so the robot pose visible during _resample_command is still
     # the pre-reset one; placing there would put the ball relative to wherever
     # the robot used to be. _update_command runs after the forward, so it sees
-    # the real pose -- and the same deferral gives the post-kick respawn a
+    # the real pose -- and the same deferral gives the post-chris_dribble respawn a
     # current pose to anchor on too.
     self._pending_place = torch.zeros(
       self.num_envs, dtype=torch.bool, device=self.device
@@ -236,17 +236,17 @@ class KickCommand(CommandTerm):
     self._pending_forward = torch.zeros(self.num_envs, device=self.device)
     self._pending_side = torch.zeros(self.num_envs, device=self.device)
 
-    # Viewer control. joystick_gate is set by MultiCommand to "is the kick type
+    # Viewer control. joystick_gate is set by MultiCommand to "is the chris_dribble type
     # selected"; see the JoystickTerm protocol in multi_command.py.
     self.joystick_gate: Callable[[], bool] | None = None
     self._gui_direction: viser.GuiSliderHandle | None = None
     self._gui_strength: viser.GuiSliderHandle | None = None
     self._gui_get_env_idx: Callable[[], int] | None = None
 
-    # Kicks completed per episode. The per-kick quality numbers are logged from
-    # ``_score_finished_kicks`` instead: averaging them over an episode that
-    # contains a variable number of kicks says very little.
-    self.metrics["kicks"] = torch.zeros(self.num_envs, device=self.device)
+    # chris_dribbles completed per episode. The per-chris_dribble quality numbers are logged from
+    # ``_score_finished_chris_dribbles`` instead: averaging them over an episode that
+    # contains a variable number of chris_dribbles says very little.
+    self.metrics["chris_dribbles"] = torch.zeros(self.num_envs, device=self.device)
 
   # Properties.
 
@@ -274,7 +274,7 @@ class KickCommand(CommandTerm):
   def target_vel_w(self) -> torch.Tensor:
     """Commanded ball velocity in world xy, ``(num_envs, 2)``."""
     return self.strength.unsqueeze(1) * torch.stack(
-      [torch.cos(self.kick_dir_w), torch.sin(self.kick_dir_w)], dim=1
+      [torch.cos(self.chris_dribble_dir_w), torch.sin(self.chris_dribble_dir_w)], dim=1
     )
 
   # The GoalPoseTerm contract, with the ball as the "goal": lets the shared
@@ -359,7 +359,7 @@ class KickCommand(CommandTerm):
     self._write_ball(env_ids, base_xy + offset)
 
     cone = math.radians(self.cfg.direction_cone_deg)
-    self.kick_dir_w[env_ids] = wrap_to_pi(
+    self.chris_dribble_dir_w[env_ids] = wrap_to_pi(
       yaw + torch.empty(n, device=self.device).uniform_(-cone, cone)
     )
     self.strength[env_ids] = torch.empty(n, device=self.device).uniform_(
@@ -416,7 +416,7 @@ class KickCommand(CommandTerm):
       ],
       dim=1,
     )
-    self.dir_err = wrap_to_pi(self.kick_dir_w - heading)
+    self.dir_err = wrap_to_pi(self.chris_dribble_dir_w - heading)
 
     self._update_approach_geometry(cos_h, sin_h)
     self._update_cycle(active, vel_w)
@@ -431,9 +431,9 @@ class KickCommand(CommandTerm):
       foot_pos, foot_quat, ball_xy, self._medial_signs
     )
 
-    kick_dir_b = torch.stack([torch.cos(self.dir_err), torch.sin(self.dir_err)], dim=1)
-    self.desired_foot_is_left = select_kick_foot_is_left(
-      self.ball_pos_b, kick_dir_b, self._select_angle
+    chris_dribble_dir_b = torch.stack([torch.cos(self.dir_err), torch.sin(self.dir_err)], dim=1)
+    self.desired_foot_is_left = select_chris_dribble_foot_is_left(
+      self.ball_pos_b, chris_dribble_dir_b, self._select_angle
     )
 
     # Aim the approach at a point offset sideways toward the foot that should
@@ -482,7 +482,7 @@ class KickCommand(CommandTerm):
       self.peak_speed = torch.where(
         self.new_contact, torch.zeros_like(self.peak_speed), self.peak_speed
       )
-      self.metrics["kicks"] += self.new_contact.float()
+      self.metrics["chris_dribbles"] += self.new_contact.float()
 
     in_window = active & (self.window_left > 0)
     better = in_window & (speed > self.peak_speed)
@@ -492,26 +492,26 @@ class KickCommand(CommandTerm):
     expiring = in_window & (self.window_left == 1)
     self.window_left = torch.where(in_window, self.window_left - 1, self.window_left)
     if bool(expiring.any()):
-      self._score_finished_kicks(expiring)
+      self._score_finished_chris_dribbles(expiring)
       self._begin_ball_life(expiring.nonzero().flatten())
 
-  def _score_finished_kicks(self, done: torch.Tensor) -> None:
-    """Log what the kicks that just finished actually achieved."""
+  def _score_finished_chris_dribbles(self, done: torch.Tensor) -> None:
+    """Log what the chris_dribbles that just finished actually achieved."""
     ball_dir = torch.atan2(self.peak_vel_w[:, 1], self.peak_vel_w[:, 0])
-    dir_err = wrap_to_pi(ball_dir - self.kick_dir_w).abs()
+    dir_err = wrap_to_pi(ball_dir - self.chris_dribble_dir_w).abs()
     n = done.sum().clamp(min=1)
     log = self._env.extras.setdefault("log", {})
-    log["Metrics/kick_peak_speed"] = ((self.peak_speed * done).sum() / n).item()
-    log["Metrics/kick_speed_error"] = (
+    log["Metrics/chris_dribble_peak_speed"] = ((self.peak_speed * done).sum() / n).item()
+    log["Metrics/chris_dribble_speed_error"] = (
       ((self.peak_speed - self.strength).abs() * done).sum() / n
     ).item()
-    log["Metrics/kick_aim_error"] = ((dir_err * done).sum() / n).item()
-    log["Metrics/kick_style"] = ((self.style * done).sum() / n).item()
-    log["Metrics/kick_right_foot"] = ((self.foot_correct & done).sum() / n).item()
+    log["Metrics/chris_dribble_aim_error"] = ((dir_err * done).sum() / n).item()
+    log["Metrics/chris_dribble_style"] = ((self.style * done).sum() / n).item()
+    log["Metrics/chris_dribble_right_foot"] = ((self.foot_correct & done).sum() / n).item()
 
   def _update_metrics(self) -> None:
     # Everything worth reporting is either a per-episode count (accumulated in
-    # ``_update_cycle``) or a per-kick value (logged as each window closes).
+    # ``_update_cycle``) or a per-chris_dribble value (logged as each window closes).
     pass
 
   # Viewer control.
@@ -545,19 +545,19 @@ class KickCommand(CommandTerm):
     return self.joystick_gate is not None and self.joystick_gate()
 
   def apply_joystick(self) -> None:
-    """Drive the commanded kick from the viewer sliders for the viewed env."""
+    """Drive the commanded chris_dribble from the viewer sliders for the viewed env."""
     if self._gui_direction is None or self._gui_strength is None:
       return
     if not self._joystick_active():
       return
     assert self._gui_get_env_idx is not None
     idx = self._gui_get_env_idx()
-    self.kick_dir_w[idx] = self._gui_direction.value
+    self.chris_dribble_dir_w[idx] = self._gui_direction.value
     self.strength[idx] = self._gui_strength.value
     # dir_err was derived in _update_command from the previous direction; redo
     # it so this step's observation already reflects the slider.
     self.dir_err[idx] = wrap_to_pi(
-      self.kick_dir_w[idx] - self.robot.data.heading_w[idx]
+      self.chris_dribble_dir_w[idx] - self.robot.data.heading_w[idx]
     )
 
   # Visualization.
@@ -569,12 +569,12 @@ class KickCommand(CommandTerm):
     import numpy as np
 
     ball_xy = self.ball_pos_w.cpu().numpy()
-    dirs = self.kick_dir_w.cpu().numpy()
+    dirs = self.chris_dribble_dir_w.cpu().numpy()
     strengths = self.strength.cpu().numpy()
     in_window = (self.window_left > 0).cpu().numpy()
     for batch in env_indices:
-      # Arrow from the ball along the commanded kick, scaled by strength. Green
-      # while the post-kick window is being scored, orange while approaching.
+      # Arrow from the ball along the commanded chris_dribble, scaled by strength. Green
+      # while the post-chris_dribble window is being scored, orange while approaching.
       length = 0.15 * float(strengths[batch])
       start = np.array([ball_xy[batch, 0], ball_xy[batch, 1], BALL_RADIUS])
       end = start + np.array(
@@ -585,7 +585,7 @@ class KickCommand(CommandTerm):
 
 
 @dataclass(kw_only=True)
-class KickCommandCfg(CommandTermCfg):
+class chris_dribbleCommandCfg(CommandTermCfg):
   entity_name: str = "robot"
   ball_entity_name: str = "ball"
   ball_radius: float = BALL_RADIUS
@@ -607,7 +607,7 @@ class KickCommandCfg(CommandTermCfg):
   ball is there beyond what the command block tells it. Widen once the approach
   is reliable to make the robot turn and find the ball."""
   direction_cone_deg: float = 80.0
-  """Commanded kick heading is drawn within this cone of the robot's heading at
+  """Commanded chris_dribble heading is drawn within this cone of the robot's heading at
   placement -- a direction it has some chance of hitting from where it stands.
   Widen towards 180 to demand turning the ball around."""
 
@@ -620,17 +620,17 @@ class KickCommandCfg(CommandTermCfg):
 
   contact_speed: float = 0.5
   """Ball speed (m/s) that counts as a strike and opens the scoring window.
-  High enough that brushing past the ball while walking does not start a kick."""
+  High enough that brushing past the ball while walking does not start a chris_dribble."""
 
   window_s: float = 1.0
-  """Seconds the post-kick scoring window stays open. The kick rewards are paid
+  """Seconds the post-chris_dribble scoring window stays open. The chris_dribble rewards are paid
   densely across it, then the ball is re-placed and the cycle restarts. Long
   enough to be worth more than the approach, short enough that the robot cannot
   catch up with the ball and keep topping its speed up."""
 
   foot_select_angle_deg: float = 20.0
   """Half-width of the "straight ahead" band in
-  :func:`select_kick_foot_is_left`."""
+  :func:`select_chris_dribble_foot_is_left`."""
   approach_foot_offset: float = 0.2
   """Metres to offset the approach target sideways toward the striking foot."""
 
@@ -642,8 +642,8 @@ class KickCommandCfg(CommandTermCfg):
 
   viz: VizCfg = field(default_factory=VizCfg)
 
-  def build(self, env: ManagerBasedRlEnv) -> KickCommand:
-    return KickCommand(self, env)
+  def build(self, env: ManagerBasedRlEnv) -> chris_dribbleCommand:
+    return chris_dribbleCommand(self, env)
 
 
 ##
@@ -651,27 +651,27 @@ class KickCommandCfg(CommandTermCfg):
 ##
 
 
-def _kick_term(
+def _chris_dribble_term(
   env: ManagerBasedRlEnv, command_name: str, sub_command_name: str | None
-) -> KickCommand:
+) -> chris_dribbleCommand:
   term, _ = resolve_command_term(env, command_name, sub_command_name)
-  assert isinstance(term, KickCommand)
+  assert isinstance(term, chris_dribbleCommand)
   return term
 
 
 def _direction_factor(
-  vel_w: torch.Tensor, kick_dir_w: torch.Tensor, sigma: float
+  vel_w: torch.Tensor, chris_dribble_dir_w: torch.Tensor, sigma: float
 ) -> torch.Tensor:
   """Signed aim quality in [-1, 1] against the commanded direction.
 
   +1 dead on, 0 at roughly the tolerance boundary, -1 straight backwards. Signed
-  rather than a plain Gaussian so a hard kick in the wrong direction is an
-  active mistake, not merely a missed reward -- otherwise "kick hard, ignore
+  rather than a plain Gaussian so a hard chris_dribble in the wrong direction is an
+  active mistake, not merely a missed reward -- otherwise "chris_dribble hard, ignore
   aim" is a perfectly good strategy. ``sigma`` is meant to start generous and be
   narrowed by curriculum.
   """
   ball_dir = torch.atan2(vel_w[:, 1], vel_w[:, 0])
-  err = wrap_to_pi(ball_dir - kick_dir_w)
+  err = wrap_to_pi(ball_dir - chris_dribble_dir_w)
   return 2.0 * torch.exp(-0.5 * (err / sigma) ** 2) - 1.0
 
 
@@ -680,7 +680,7 @@ def _speed_score(
 ) -> torch.Tensor:
   """How close the ball's peak speed came to the commanded strength, in [0, 1].
 
-  The tolerance is relative to the command, so a 5 m/s kick is not held to the
+  The tolerance is relative to the command, so a 5 m/s chris_dribble is not held to the
   same absolute precision as a 1 m/s one.
   """
   err = (speed - strength) / (rel_std * strength.clamp(min=1e-3))
@@ -695,19 +695,19 @@ def _speed_score(
 class ball_state:
   """Delayed ball observation: ``[ball_x, ball_y, ball_vx, ball_vy]``, base frame.
 
-  Deliberately not part of the kick *command*. The ball is seen, not commanded,
+  Deliberately not part of the chris_dribble *command*. The ball is seen, not commanded,
   and it is seen by a camera: the delay here is ``min_lag``-``max_lag`` control
   steps, an order of magnitude longer than the one-step lag the proprioceptive
   terms carry. That is its own sensing channel, so it gets its own term rather
   than riding along on a command block whose other entries the policy is told
   instantly.
 
-  The observation is zeroed on every env the kick command is not driving --
+  The observation is zeroed on every env the chris_dribble command is not driving --
   *after* the delay as well as before it. Both matter, and for different
   reasons. Masking on the way in keeps the parked ball (100 m away, see
-  ``KickCommandCfg.park_position``) out of the history, so switching *to* kick
+  ``chris_dribbleCommandCfg.park_position``) out of the history, so switching *to* chris_dribble
   cannot serve a 100 m spike out of the buffer; masking on the way out makes
-  the zeroing immediate, so switching *away* from kick does not leave a stale
+  the zeroing immediate, so switching *away* from chris_dribble does not leave a stale
   ball in the observation for the length of the lag while the one-hot already
   says otherwise.
 
@@ -736,7 +736,7 @@ class ball_state:
   ) -> torch.Tensor:
     del min_lag, max_lag  # Read once in __init__; the buffer owns them.
     term, active = resolve_command_term(env, command_name, sub_command_name)
-    assert isinstance(term, KickCommand)
+    assert isinstance(term, chris_dribbleCommand)
     mask = active.unsqueeze(1).float()
     self._buffer.append(term.ball_state_b * mask)
     return self._buffer.compute() * mask
@@ -750,28 +750,28 @@ class ball_state:
 ##
 
 
-def kick_ball_speed(
+def chris_dribble_ball_speed(
   env: ManagerBasedRlEnv,
   command_name: str,
   sub_command_name: str | None = None,
 ) -> torch.Tensor:
   """Ball speed in m/s (world xy). Reads 0 while the ball sits parked."""
-  term = _kick_term(env, command_name, sub_command_name)
+  term = _chris_dribble_term(env, command_name, sub_command_name)
   return torch.norm(term.ball.data.root_link_lin_vel_w[:, :2], dim=1)
 
 
-def kick_phase(
+def chris_dribble_phase(
   env: ManagerBasedRlEnv,
   command_name: str,
   sub_command_name: str | None = None,
 ) -> torch.Tensor:
   """Where in the ball cycle an env is.
 
-  0 = the kick command is not driving this env, 1 = approaching the ball,
-  2 = inside the post-kick scoring window.
+  0 = the chris_dribble command is not driving this env, 1 = approaching the ball,
+  2 = inside the post-chris_dribble scoring window.
   """
   term, active = resolve_command_term(env, command_name, sub_command_name)
-  assert isinstance(term, KickCommand)
+  assert isinstance(term, chris_dribbleCommand)
   ones = torch.ones(env.num_envs, device=env.device)
   phase = torch.where(term.window_left > 0, 2.0 * ones, ones)
   return torch.where(active, phase, torch.zeros_like(phase))
@@ -782,7 +782,7 @@ def kick_phase(
 ##
 
 
-def kick_approach(
+def chris_dribble_approach(
   env: ManagerBasedRlEnv,
   command_name: str,
   sub_command_name: str | None = None,
@@ -803,7 +803,7 @@ def kick_approach(
   needs the guidance most. ``max_speed`` caps the credited speed so charging the
   ball flat out is not better than arriving under control.
   """
-  term = _kick_term(env, command_name, sub_command_name)
+  term = _chris_dribble_term(env, command_name, sub_command_name)
   vel = term.robot.data.root_link_lin_vel_w[:, :2]
   speed = torch.norm(vel, dim=1)
   cos_align = torch.clamp(
@@ -814,23 +814,23 @@ def kick_approach(
   return torch.where(term.touched, torch.zeros_like(reward), reward)
 
 
-def kick_face_ball(
+def chris_dribble_face_ball(
   env: ManagerBasedRlEnv,
   command_name: str,
   sub_command_name: str | None = None,
 ) -> torch.Tensor:
   """Reward keeping the ball ahead of the torso while approaching it.
 
-  ``exp(-|bearing|)`` from the same offset approach point ``kick_approach``
+  ``exp(-|bearing|)`` from the same offset approach point ``chris_dribble_approach``
   uses: 1 with the ball dead ahead, decaying as it swings to the side or behind.
   Arriving side-on or backing into the ball leaves no way to swing at it.
   """
-  term = _kick_term(env, command_name, sub_command_name)
+  term = _chris_dribble_term(env, command_name, sub_command_name)
   reward = torch.exp(-term.approach_angle.abs())
   return torch.where(term.touched, torch.zeros_like(reward), reward)
 
 
-def kick_idle(
+def chris_dribble_idle(
   env: ManagerBasedRlEnv,
   command_name: str,
   sub_command_name: str | None = None,
@@ -842,19 +842,19 @@ def kick_idle(
   Flat rather than proportional to how slow, so it cannot be paid off cheaply by
   creeping along just above the threshold. This is what removes the do-nothing
   optimum: without it, refusing to engage costs nothing at all, since
-  ``kick_approach`` is signed and reads zero when standing.
+  ``chris_dribble_approach`` is signed and reads zero when standing.
 
   Only applies beyond ``near_dist``. Planting the support foot to swing at the
   ball drops the base speed to almost nothing, and that is the very motion the
   task wants -- penalizing it would be self-defeating.
   """
-  term = _kick_term(env, command_name, sub_command_name)
+  term = _chris_dribble_term(env, command_name, sub_command_name)
   speed = torch.norm(term.robot.data.root_link_lin_vel_w[:, :2], dim=1)
   dist = torch.norm(term.ball_pos_b, dim=1)
   return ((speed < vel_threshold) & ~term.touched & (dist > near_dist)).float()
 
 
-def kick_foot_alignment(
+def chris_dribble_foot_alignment(
   env: ManagerBasedRlEnv,
   command_name: str,
   sub_command_name: str | None = None,
@@ -868,18 +868,18 @@ def kick_foot_alignment(
   the motion a side-foot pass wants. Applied to both feet, since either may end
   up being the one that swings, and only while the ball is still untouched.
   """
-  term = _kick_term(env, command_name, sub_command_name)
+  term = _chris_dribble_term(env, command_name, sub_command_name)
   misalign = 1.0 - torch.clamp(term.foot_align, -1.0, 1.0)
   penalty = (misalign * (term.foot_dist < close_dist).float()).sum(dim=1)
   return torch.where(term.touched, torch.zeros_like(penalty), penalty)
 
 
 ##
-# Rewards: the kick itself.
+# Rewards: the chris_dribble itself.
 ##
 
 
-def kick_contact(
+def chris_dribble_contact(
   env: ManagerBasedRlEnv,
   command_name: str,
   sub_command_name: str | None = None,
@@ -889,18 +889,18 @@ def kick_contact(
 
   Pure bootstrap: it rewards making contact at all, which is what the policy has
   to stumble into before any of the quality terms can say anything useful. Drop
-  it by curriculum once kicking is established -- left on, a flat payout per
-  contact makes a stream of weak taps competitive with real kicks, because the
+  it by curriculum once chris_dribbleing is established -- left on, a flat payout per
+  contact makes a stream of weak taps competitive with real chris_dribbles, because the
   ball is re-placed after every one.
 
   ``-wrong_foot_penalty`` instead when the other foot got there first: which
   foot should play the ball follows from the ball's position and the target
-  direction (see :func:`select_kick_foot_is_left`).
+  direction (see :func:`select_chris_dribble_foot_is_left`).
 
   Divided by the timestep, because the reward manager scales every term by dt:
   the payout then lands as its face value, whatever the control rate.
   """
-  term = _kick_term(env, command_name, sub_command_name)
+  term = _chris_dribble_term(env, command_name, sub_command_name)
   payout = torch.where(
     term.foot_correct,
     torch.ones_like(term.style),
@@ -909,16 +909,16 @@ def kick_contact(
   return torch.where(term.new_contact, payout, torch.zeros_like(payout)) / env.step_dt
 
 
-def kick_impact(
+def chris_dribble_impact(
   env: ManagerBasedRlEnv,
   command_name: str,
   sub_command_name: str | None = None,
   dir_sigma: float = 1.05,
   speed_rel_std: float = 0.35,
-  min_ball_speed: float = 0.2,
+  min_ball_speed: float = 0.5,
   style_floor: float = 0.25,
 ) -> torch.Tensor:
-  """Score the kick, densely, for as long as the post-kick window is open.
+  """Score the chris_dribble, densely, for as long as the post-chris_dribble window is open.
 
   ``style * speed_score * direction_factor``, all measured on the *peak* ball
   velocity since the strike:
@@ -927,54 +927,54 @@ def kick_impact(
     by ``style_floor``. The template multiplies by the raw value, which zeroes
     the payload for a toe-poke -- but a toe-poke that sends the ball at the
     commanded speed and direction is exactly the discovery the policy has to
-    make first, and it is already penalized by ``kick_foot_alignment``. The
+    make first, and it is already penalized by ``chris_dribble_foot_alignment``. The
     floor keeps a clean side-foot contact worth ``1/style_floor`` times as much
     without making the alternative worthless.
   * ``speed_score``: how close the peak came to the commanded strength.
   * ``direction_factor``: signed aim, so power in the wrong direction is a
     mistake rather than a smaller reward.
 
-  Paid every step of the window rather than once, so the kick -- not the walk up
+  Paid every step of the window rather than once, so the chris_dribble -- not the walk up
   to it -- is where the reward lives. That is the flaw this design set out to
   fix: a single payout at the moment of contact is easily worth less than the
-  approach that preceded it, which makes never kicking the better policy.
+  approach that preceded it, which makes never chris_dribbleing the better policy.
 
   The window is short and the ball is re-placed when it closes, which is what
   stops the obvious abuse of a dense ball-velocity reward: the robot cannot
   dribble the ball along, topping its speed back up, because the ball is gone
   a second after the first touch.
 
-  Gated on the correct foot: a kick with the wrong one already takes
-  :func:`kick_contact`'s penalty and should not collect the payload on top.
+  Gated on the correct foot: a chris_dribble with the wrong one already takes
+  :func:`chris_dribble_contact`'s penalty and should not collect the payload on top.
   """
-  term = _kick_term(env, command_name, sub_command_name)
+  term = _chris_dribble_term(env, command_name, sub_command_name)
   active = (term.window_left > 0) & term.foot_correct
   active &= term.peak_speed > min_ball_speed
   style = style_floor + (1.0 - style_floor) * term.style
   score = (
     style
     * _speed_score(term.peak_speed, term.strength, speed_rel_std)
-    * _direction_factor(term.peak_vel_w, term.kick_dir_w, dir_sigma)
+    * _direction_factor(term.peak_vel_w, term.chris_dribble_dir_w, dir_sigma)
   )
   return torch.where(active, score, torch.zeros_like(score))
 
 
-def kick_direction(
+def chris_dribble_direction(
   env: ManagerBasedRlEnv,
   command_name: str,
   sub_command_name: str | None = None,
   dir_sigma: float = 1.05,
   min_ball_speed: float = 0.2,
 ) -> torch.Tensor:
-  """Signed aim of the kick, densely over the window.
+  """Signed aim of the chris_dribble, densely over the window.
 
-  The same factor :func:`kick_impact` folds in, on its own and ungated by style
-  or foot correctness, so aim keeps a gradient even on a kick that was scrappy
-  in every other respect. Shares ``kick_impact``'s parameter name so a single
+  The same factor :func:`chris_dribble_impact` folds in, on its own and ungated by style
+  or foot correctness, so aim keeps a gradient even on a chris_dribble that was scrappy
+  in every other respect. Shares ``chris_dribble_impact``'s parameter name so a single
   curriculum can narrow both tolerances together -- letting them drift apart
-  would score the same kick two different ways.
+  would score the same chris_dribble two different ways.
   """
-  term = _kick_term(env, command_name, sub_command_name)
+  term = _chris_dribble_term(env, command_name, sub_command_name)
   active = (term.window_left > 0) & (term.peak_speed > min_ball_speed)
-  factor = _direction_factor(term.peak_vel_w, term.kick_dir_w, dir_sigma)
+  factor = _direction_factor(term.peak_vel_w, term.chris_dribble_dir_w, dir_sigma)
   return torch.where(active, factor, torch.zeros_like(factor))
