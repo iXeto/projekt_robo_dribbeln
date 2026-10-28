@@ -63,6 +63,22 @@ def ball_vel_b(
   return quat_apply_inverse(q, vel_w)[:, :2]
 
 
+def ball_state_b(
+  env: ManagerBasedRlEnv,
+  robot_cfg: SceneEntityCfg = _ROBOT,
+  ball_cfg: SceneEntityCfg = _BALL,
+) -> torch.Tensor:
+  """``[ball_x, ball_y, ball_vx, ball_vy]`` in the robot's yaw frame.
+
+  Position and velocity in one term so that a delay applied to it lags both by
+  the same number of steps, as a single camera frame would.
+  """
+  return torch.cat(
+    [ball_pos_b(env, robot_cfg, ball_cfg), ball_vel_b(env, robot_cfg, ball_cfg)],
+    dim=1,
+  )
+
+
 def goal_pos_b(
   env: ManagerBasedRlEnv, command_name: str, sub_command_name: str | None = None
 ) -> torch.Tensor:

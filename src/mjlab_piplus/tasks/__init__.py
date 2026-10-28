@@ -5,6 +5,8 @@ from .chris_dribble_env_cfg import chris_dribble_env_cfg
 from .chris_dribble_rl_cfg import get_chris_dribble_rl_cfg
 from .dribble_mini_env_cfg import dribble_mini_env_cfg
 from .dribble_mini_rl_cfg import dribble_mini_rl_cfg
+from .melika_dribble_env_cfg import melika_dribble_env_cfg
+from .melika_dribble_rl_cfg import melika_dribble_rl_cfg
 from .piplus_multi_env_cfg import piplus_multi_env_cfg
 from .piplus_multi_rl_cfg import get_piplus_multi_rl_cfg
 from .piplus_path_env_cfg import piplus_path_env_cfg
@@ -55,6 +57,14 @@ register_mjlab_task(
   env_cfg=dribble_mini_env_cfg(),
   play_env_cfg=dribble_mini_env_cfg(play=True),
   rl_cfg=dribble_mini_rl_cfg(),
+  runner_cls=VelocityOnPolicyRunner,
+)
+# Copy of the mini dribble task, to be hardened for sim2real.
+register_mjlab_task(
+  task_id="Mjlab-MelikaDribble-PiPlus",
+  env_cfg=melika_dribble_env_cfg(),
+  play_env_cfg=melika_dribble_env_cfg(play=True),
+  rl_cfg=melika_dribble_rl_cfg(),
   runner_cls=VelocityOnPolicyRunner,
 )
 # Dribble task built step by step from a copy of the multi task.
