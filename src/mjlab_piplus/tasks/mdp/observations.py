@@ -1,7 +1,8 @@
-from mjlab_piplus.tasks import chris_dribble_rl_cfg
 import torch
 from mjlab.envs import ManagerBasedRlEnv
+from mjlab.managers.scene_entity_config import SceneEntityCfg
 
+from mjlab_piplus.tasks.mdp.dribble import ball_state_b
 from mjlab_piplus.tasks.mdp.multi_command import stand_mask
 
 
@@ -41,35 +42,13 @@ def goal_pose_command(env: ManagerBasedRlEnv, command_name: str) -> torch.Tensor
 def zeros(env: ManagerBasedRlEnv, shape) -> torch.Tensor:
   return torch.zeros((env.num_envs, *shape), device=env.device)
 
-def relative_ball_position(env: ManagerBasedRlEnv, ball_entity) -> torch.Tensor:
-  
-    self.ball: Entity = env.scene[cfg.ball_entity_name]
-  pos_w = self.ball.data.root_link_pos_w[:, :2]
-  vel_w = self.ball.data.root_link_lin_vel_w[:, :2]
-  if bool(self._wrote.any()):
-    fresh = self._wrote.unsqueeze(1)
-    pos_w = torch.where(fresh, self._wrote_pos, pos_w)
-    vel_w = torch.where(fresh, torch.zeros_like(vel_w), vel_w)
-    self._wrote[:] = False
-  self.ball_pos_w = pos_w
 
-  # Into the base frame.
-  base_xy = self.robot.data.root_link_pos_w[:, :2]
-  heading = self.robot.data.heading_w
-  cos_h, sin_h = torch.cos(heading), torch.sin(heading)
-  delta = pos_w - base_xy
-  self.ball_pos_b = torch.stack(
-    [
-      cos_h * delta[:, 0] + sin_h * delta[:, 1],
-      -sin_h * delta[:, 0] + cos_h * delta[:, 1],
-    ],
-    dim=1,
-  )
-  self.ball_vel_b = torch.stack(
-    [
-      cos_h * vel_w[:, 0] + sin_h * vel_w[:, 1],
-      -sin_h * vel_w[:, 0] + cos_h * vel_w[:, 1],
-    ],
-    dim=1,
-  )
-  return 
+def relative_ball_position(
+  env: ManagerBasedRlEnv, ball_entity_name: str = "ball"
+) -> torch.Tensor:
+  """``[ball_x, ball_y, ball_vx, ball_vy]`` in the robot's yaw frame.
+
+  True state. Camera-like noise and delay belong on the observation term
+  (``noise``, ``delay_min_lag`` / ``delay_max_lag``), not in here.
+  """
+  return ball_state_b(env, ball_cfg=SceneEntityCfg(ball_entity_name))
