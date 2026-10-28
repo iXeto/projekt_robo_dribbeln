@@ -191,13 +191,12 @@ def chris_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     # sensed, and on a camera's timescale -- the delay is applied inside the
     # term (see ``pi_mdp.ball_state``), not through delay_min_lag/delay_max_lag.
     "ball": ObservationTermCfg(
-      func=pi_mdp.ball_state,
+      func=pi_mdp.relative_ball_position,
       params={
-        "command_name": "command",
-        "sub_command_name": "chris_dribble",
-        "min_lag": BALL_DELAY_MIN,
-        "max_lag": BALL_DELAY_MAX,
+        "ball_entity_name": "ball"
       },
+      delay_min_lag=BALL_DELAY_MIN,
+      delay_max_lag=BALL_DELAY_MAX,
     ),
   }
   critic_terms = {
@@ -260,22 +259,12 @@ def chris_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
   ##
 
   commands: dict[str, CommandTermCfg] = {
-    "command": pi_mdp.MultiCommandCfg(
+    "chris_dribble": pi_mdp.GoalPoseCommandCfg(
+      entity_name="robot",
       debug_vis=True,
-      change_command_probability=0.3,
-      fractions={
-        "chris_dribble": 1.0,
-      },
-      terms={
-        # Goal position for the ball; the ball itself is placed by the reset_ball event.
-        "chris_dribble": pi_mdp.GoalPoseCommandCfg(
-          entity_name="robot",
-          debug_vis=True,
-          resampling_time_range=(10.0, 25.0),
-          radius_range=(1.0, 5.0)
-        ),
-      },
-    )
+      resampling_time_range=(10.0, 25.0),
+      radius_range=(1.0, 5.0)
+    ),
   }
 
   ##
