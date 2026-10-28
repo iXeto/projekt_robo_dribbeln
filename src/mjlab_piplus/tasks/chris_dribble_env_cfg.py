@@ -115,29 +115,9 @@ chris_dribble_DIR_SIGMA_END = math.radians(20.0)
 
 # Weight presets, spelled out so a reward's applicability reads at a glance.
 _OFF = {
-  "velocity": 0.0,
-  "path": 0.0,
-  "footstep": 0.0,
-  "goal_pose": 0.0,
   "chris_dribble": 0.0,
-  "stand": 0.0,
 }
-VELOCITY_AND_STAND = {**_OFF, "velocity": 1.0, "stand": 0.25}
-PATH_ONLY = {**_OFF, "path": 1.0}
-FOOTSTEP_ONLY = {**_OFF, "footstep": 1.0}
-GOAL_POSE_ONLY = {**_OFF, "goal_pose": 1.0}
 chris_dribble_ONLY = {**_OFF, "chris_dribble": 1.0}
-# Full weight everywhere, but tripled under a stand command: holding the default
-# pose is most of what "stand" asks for, while under the moving commands the same
-# term pulls against the gait and stays at its nominal weight.
-STAND_BOOSTED = {name: 1.0 for name in _OFF} | {"stand": 3.0}
-
-# Number of future path points in the command observation.
-NUM_PATH_OBSERVATIONS = 8
-# Number of upcoming footsteps in the command observation. Each costs 8 dims
-# (which foot, target xyz, target roll/pitch, target yaw as cos/sin).
-NUM_FOOTSTEP_OBSERVATIONS = 4
-
 
 def chris_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
   foot_sites = ("l_foot", "r_foot")
@@ -279,109 +259,28 @@ def chris_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
   # Commands
   ##
 
-  # The multi command redraws the type on each resample, then arms the next
-  # resample from the *selected* sub-command's own ``resampling_time_range``:
-  # velocity re-rolls every few seconds, a path gets long enough to be walked,
-  # a stand gets a short dwell.
-  path_cfg = PathCommandCfg(
-    entity_name="robot",
-    debug_vis=True,
-    resampling_time_range=(10.0, 20.0),
-    num_observations=NUM_PATH_OBSERVATIONS,
-    # A path can be handed to a robot that is already mid-episode and away from
-    # its spawn, so anchor each new path at the robot's current position.
-    align=True,
-    pathlib_size=2000,
-  )
-
-  # A timed footstep plan: where the next few footfalls go, relative to where
-  # each foot rests in the default stance. Half its scenarios read the footsteps
-  # off the same A* path library the path command walks (shared in memory, since
-  # the generation parameters match), the other half sample them as Gaussian
-  # deltas from the previous footstep.
-  footstep_cfg = FootstepCommandCfg(
-    entity_name="robot",
-    debug_vis=True,
-    resampling_time_range=(10.0, 20.0),
-    # Must match the gait the phase observation and the feet_* rewards run on:
-    # the footstep schedule is read straight off that clock.
-    frequency=WALK_FREQUENCY,
-    stance_threshold=0.56,
-    num_observations=NUM_FOOTSTEP_OBSERVATIONS,
-    # Two footsteps per gait period, so this has to outlast the 20 s resample.
-    max_steps=96,
-    path_fraction=0.5,
-  )
-
   commands: dict[str, CommandTermCfg] = {
     "command": pi_mdp.MultiCommandCfg(
       debug_vis=True,
       change_command_probability=0.3,
       fractions={
-        "velocity": 0.2,
-        "path": 0.15,
-        "goal_pose": 0.15,
-        "footstep": 0.15,
-        "chris_dribble": 0.25,
-        "stand": 0.10,
+        "chris_dribble": 1.0,
       },
       terms={
-        "velocity": pi_mdp.UniformVelocityCommandWithStopCfg(
-          entity_name="robot",
-          resampling_time_range=(3.0, 8.0),
-          debug_vis=True,
-          heading_command=True,
-          heading_control_stiffness=0.0,
-          # Standing is its own command type, so this term never stands: a zero
-          # velocity here means walk-in-place, and the command drops to 3 dims.
-          expose_stand_flag=False,
-          rel_standing_envs=0.0,
-          rel_walk_in_place_envs=0.075,
-          rel_heading_envs=0.3,
-          rel_forward_envs=0.15,
-          ranges=pi_mdp.UniformVelocityCommandWithStopCfg.Ranges(
-            lin_vel_x=(-0.5, MAX_COMMANDED_SPEED),
-            lin_vel_y=(-0.4, 0.4),
-            ang_vel_z=(-math.pi, math.pi),
-            heading=(-math.pi, math.pi),
-          ),
-        ),
-        "path": path_cfg,
-        "footstep": footstep_cfg,
-        # Go to a pose sampled relative to the robot: no reference path, just
-        # the goal. Standing is its own type here, so rel_standing_envs stays 0.
-        "goal_pose": pi_mdp.GoalPoseCommandCfg(
-          entity_name="robot",
-          debug_vis=True,
-          resampling_time_range=(1.0, 15.0),
-          radius_range=(0.5, 8.0),
-          yaw_range=(-math.pi, math.pi),
-          rel_standing_envs=0.0,
-        ),
         # Owns the ball outright: places it near the robot while driving an
         # env, parks it at park_position while not.
         "chris_dribble": pi_mdp.chris_dribbleCommandCfg(
           entity_name="robot",
           debug_vis=True,
-          # Long enough for several ball lives: the ball comes back after every
-          # chris_dribble, so this only bounds how long the chris_dribble task is handed out for.
           resampling_time_range=(8.0, 16.0),
-          # Placed within a 60 degree fan either side of where the robot is
-          # facing, at most 1.2 m away whatever the bearing.
           distance_range=(0.3, 1.2),
           placement_cone_deg=60.0,
-          # Target direction within this cone of the robot's heading at
-          # placement -- a direction it can plausibly hit from where it stands.
-          # Widen towards 180 once chris_dribbleing works to demand turning the ball.
           direction_cone_deg=135.0,
           strength_range=(0.5, 5.0),
           park_position=(100.0, 100.0),
-          # Ball speed that counts as a strike, and how long the chris_dribble is scored
-          # for afterwards before the ball is re-placed.
           contact_speed=0.5,
           window_s=1.0,
         ),
-        "stand": pi_mdp.StandCommandCfg(resampling_time_range=(2.0, 5.0)),
       },
     )
   }
@@ -559,210 +458,6 @@ def chris_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     "robot", body_names=("r_ankle_roll_link", "l_ankle_roll_link")
   )
 
-  # -- Command tracking (velocity + stand) ----------------------------------
-  velocity_rewards = {
-    # These are the pi_mdp copies, not mjlab's: mjlab's index the command tensor
-    # directly, which under a MultiCommand would slice into the one-hot prefix.
-    # They stay active under a stand command, where the commanded twist is zero
-    # -- tracking zero velocity is exactly what standing still means.
-    "track_linear_velocity": MultiRewardTermCfg(
-      func=pi_mdp.track_linear_velocity,
-      weight=2.0,
-      params={"command_name": "command", "std": math.sqrt(0.125)},
-      command_weights=VELOCITY_AND_STAND,
-    ),
-    "track_angular_velocity": MultiRewardTermCfg(
-      func=pi_mdp.track_angular_velocity,
-      weight=2.0,
-      params={"command_name": "command", "std": math.sqrt(0.5)},
-      command_weights=VELOCITY_AND_STAND,
-    ),
-  }
-
-  # -- Path following -------------------------------------------------------
-  path_rewards = {
-    # Dense goal-pose reward split into independently-weighted position and
-    # orientation terms (the combined product was too weak). Linear:
-    # exp(-dist^2). Angular: same position gate * exp(-yaw_err^2), so
-    # orientation only counts near the goal and does not fight path-following.
-    "goal_reached_linear_reward": MultiRewardTermCfg(
-      func=goal_reached_linear,
-      weight=1.0,
-      params={
-        "command_name": "command",
-        "sub_command_name": "path",
-        "metric_prefix": "path_goal",
-        "asset_cfg": base_cfg,
-        "foot_asset_cfg": foot_asset_cfg,
-        "pos_std": 0.25,  # Gaussian width on goal distance (m).
-        "success_threshold": 0.05,  # logged success-rate metric only.
-      },
-      command_weights=PATH_ONLY,
-    ),
-    "goal_reached_angular_reward": MultiRewardTermCfg(
-      func=goal_reached_angular,
-      weight=1.0,
-      params={
-        "command_name": "command",
-        "sub_command_name": "path",
-        "metric_prefix": "path_goal",
-        "asset_cfg": base_cfg,
-        "foot_asset_cfg": foot_asset_cfg,
-        "pos_std": 0.25,  # position gate width (m); matches the linear term.
-        "yaw_std": 0.5,  # Gaussian width on goal-yaw error (rad).
-        "success_yaw_threshold": 0.2,  # logged success-rate metric only.
-      },
-      command_weights=PATH_ONLY,
-    ),
-    "close_to_path_reward": MultiRewardTermCfg(
-      func=close_to_path_reward,
-      weight=1.0,
-      params={
-        "command_name": "command",
-        "asset_cfg": base_cfg,
-        "foot_asset_cfg": foot_asset_cfg,
-        "std": math.sqrt(0.25),
-      },
-      command_weights=PATH_ONLY,
-    ),
-    "path_progress_reward": MultiRewardTermCfg(
-      func=path_progress_reward,
-      weight=2.0,
-      params={
-        "command_name": "command",
-        "asset_cfg": base_cfg,
-        "foot_asset_cfg": foot_asset_cfg,
-        # Reward is progress speed in m/s, capped here (no bonus above this).
-        "max_speed": MAX_COMMANDED_SPEED,
-      },
-      command_weights=PATH_ONLY,
-    ),
-    "alignment_with_path_reward": MultiRewardTermCfg(
-      func=align_with_path_reward,
-      weight=1.0,
-      params={
-        "command_name": "command",
-        "asset_cfg": base_cfg,
-        "foot_asset_cfg": foot_asset_cfg,
-        "std": math.sqrt(1.0),
-      },
-      command_weights=PATH_ONLY,
-    ),
-  }
-
-  # -- Footstep -------------------------------------------------------------
-  # Deviation from the commanded footstep, split per axis group so each can be
-  # weighted on its own. Scored only while a foot is planted, against the
-  # target of the footstep it last landed -- see ``mdp/footstep``.
-  footstep_rewards = {
-    "footstep_xy": MultiRewardTermCfg(
-      func=footstep_tracking_xy,
-      weight=3.0,
-      params={
-        "command_name": "command",
-        "sub_command_name": "footstep",
-        # Gaussian width on the in-plane placement error (m). Tight: this is
-        # the whole task, and the stance width is only ~0.16 m.
-        "std": 0.06,
-      },
-      command_weights=FOOTSTEP_ONLY,
-    ),
-    "footstep_yaw": MultiRewardTermCfg(
-      func=footstep_tracking_yaw,
-      weight=1.0,
-      params={
-        "command_name": "command",
-        "sub_command_name": "footstep",
-        "std": 0.3,  # Gaussian width on the foot heading error (rad).
-      },
-      command_weights=FOOTSTEP_ONLY,
-    ),
-    # Placeholders: on flat ground every footstep target sits at the resting
-    # height and perfectly level, so these two say nothing yet and are held at
-    # weight 0. Raise them once the footstep plan carries terrain heights and
-    # tilts (the sampling ranges for z/roll/pitch are already wired, at 0).
-    "footstep_z": MultiRewardTermCfg(
-      func=footstep_tracking_z,
-      weight=0.0,
-      params={
-        "command_name": "command",
-        "sub_command_name": "footstep",
-        "std": 0.03,
-      },
-      command_weights=FOOTSTEP_ONLY,
-    ),
-    "footstep_roll_pitch": MultiRewardTermCfg(
-      func=footstep_tracking_roll_pitch,
-      weight=0.0,
-      params={
-        "command_name": "command",
-        "sub_command_name": "footstep",
-        "std": 0.2,
-      },
-      command_weights=FOOTSTEP_ONLY,
-    ),
-  }
-
-  # -- Goal pose ------------------------------------------------------------
-  goal_pose_rewards = {
-    # Walk to a sampled pose. Progress carries the robot there, the look-at term
-    # keeps it facing where it is going, and the two goal-reached terms (shared
-    # with the path task) settle it onto the position and then the orientation.
-    "goal_pose_progress": MultiRewardTermCfg(
-      func=pi_mdp.goal_progress,
-      weight=2.0,
-      params={
-        "command_name": "command",
-        "sub_command_name": "goal_pose",
-        # Progress speed in m/s, capped (no bonus above this).
-        "max_speed": MAX_COMMANDED_SPEED,
-      },
-      command_weights=GOAL_POSE_ONLY,
-    ),
-    "goal_pose_look_at": MultiRewardTermCfg(
-      func=pi_mdp.orient_towards_goal,
-      weight=0.5,
-      params={
-        "command_name": "command",
-        "sub_command_name": "goal_pose",
-        "coeff": 1.0,
-        # Inside this radius the bearing is ill-conditioned, so the look-at
-        # saturates to full reward and goal_pose_reached_angular takes over.
-        "distance_threshold": 0.3,
-      },
-      command_weights=GOAL_POSE_ONLY,
-    ),
-    "goal_pose_reached_linear": MultiRewardTermCfg(
-      func=goal_reached_linear,
-      weight=1.0,
-      params={
-        "command_name": "command",
-        "sub_command_name": "goal_pose",
-        "metric_prefix": "goal_pose",
-        "asset_cfg": base_cfg,
-        "foot_asset_cfg": foot_asset_cfg,
-        "pos_std": 0.25,
-        "success_threshold": 0.05,
-      },
-      command_weights=GOAL_POSE_ONLY,
-    ),
-    "goal_pose_reached_angular": MultiRewardTermCfg(
-      func=goal_reached_angular,
-      weight=1.0,
-      params={
-        "command_name": "command",
-        "sub_command_name": "goal_pose",
-        "metric_prefix": "goal_pose",
-        "asset_cfg": base_cfg,
-        "foot_asset_cfg": foot_asset_cfg,
-        "pos_std": 0.25,
-        "yaw_std": 0.5,
-        "success_yaw_threshold": 0.2,
-      },
-      command_weights=GOAL_POSE_ONLY,
-    ),
-  }
-
   # -- chris_dribble -----------------------------------------------------------------
   chris_dribble_rewards = {
     # One repeating cycle per ball: approach, strike, then a short window over
@@ -922,7 +617,7 @@ def chris_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     "posture": MultiRewardTermCfg(
       func=pi_mdp.variable_posture,
       weight=1.0,
-      command_weights=STAND_BOOSTED,
+      command_weights=None,
       params={
         "asset_cfg": SceneEntityCfg("robot", joint_names=(".*",)),
         "command_name": "command",
@@ -1019,11 +714,7 @@ def chris_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
   }
 
   rewards = (
-    velocity_rewards
-    | path_rewards
-    | footstep_rewards
-    | goal_pose_rewards
-    | chris_dribble_rewards
+    chris_dribble_rewards
     | stability_rewards
     | safety_rewards
     | gait_rewards
@@ -1234,8 +925,6 @@ def chris_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     # command-type dropdown to switch on demand.
     # Keep the play library small enough to generate in a few seconds, but not
     # so small that every episode shows the same worlds.
-    path_cfg.pathlib_size = 200
-    footstep_cfg.pathlib.pathlib_size = 200
     metrics["phase_metric"] = MetricsTermCfg(
       func=pi_mdp.phase_metric,
       params={"frequency": WALK_FREQUENCY, "command_name": "command"},
