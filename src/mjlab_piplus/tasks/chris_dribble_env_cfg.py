@@ -73,7 +73,6 @@ from mjlab_piplus.tasks.mdp.footstep import (
   footstep_tracking_yaw,
   footstep_tracking_z,
 )
-from mjlab_piplus.tasks.mdp.multi_rewards import MultiRewardTermCfg
 from mjlab_piplus.tasks.mdp.path_following import (
   PathCommandCfg,
   align_with_path_reward,
@@ -180,10 +179,9 @@ def chris_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
       func=pi_mdp.phase,
       params={"frequency": WALK_FREQUENCY, "command_name": "command"},
     ),
-    # [one_hot(6) | velocity(3) | path(2N+2) | footstep(8M) | goal_pose(4)
-    #  | chris_dribble(3)], inactive blocks zeroed.
+    # Ball goal xy relative to the base, yaw frame.
     "command": ObservationTermCfg(
-      func=mdp.generated_commands,
+      func=pi_mdp.goal_pos_b,
       params={"command_name": "command"},
     ),
     # Ball position and velocity in the base frame, zeroed off the chris_dribble
@@ -191,12 +189,12 @@ def chris_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     # sensed, and on a camera's timescale -- the delay is applied inside the
     # term (see ``pi_mdp.ball_state``), not through delay_min_lag/delay_max_lag.
     "ball": ObservationTermCfg(
-      func=pi_mdp.relative_ball_position,
+      func=pi_mdp.ball_state,
       params={
-        "ball_entity_name": "ball"
+        "command_name": "command",
+        "min_lag": BALL_DELAY_MIN,
+        "max_lag": BALL_DELAY_MAX,
       },
-      delay_min_lag=BALL_DELAY_MIN,
-      delay_max_lag=BALL_DELAY_MAX,
     ),
   }
   critic_terms = {
