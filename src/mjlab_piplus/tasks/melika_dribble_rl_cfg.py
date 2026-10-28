@@ -38,9 +38,9 @@ def melika_dribble_rl_cfg() -> RslRlOnPolicyRunnerCfg:
       desired_kl=0.01,
       max_grad_norm=1.0,
     ),
-    # TensorBoard so the test runs without a wandb login.
-    logger="tensorboard",
-    upload_model=False,
+    logger="wandb",
+    upload_model=True,
+    wandb_project="mjlab_piplus",
     experiment_name="piplus_melika_dribble",
     save_interval=50,
     num_steps_per_env=24,
