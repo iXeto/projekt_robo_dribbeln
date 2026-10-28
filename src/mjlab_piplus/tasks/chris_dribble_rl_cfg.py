@@ -7,20 +7,30 @@ from mjlab.rl import (
   RslRlPpoAlgorithmCfg,
 )
 
-from mjlab_piplus.tasks.mdp import PiPlusSymmetry
+from mjlab_piplus.tasks.mdp import PiPlusMultiSymmetry
+from mjlab_piplus.tasks.chris_dribble_env_cfg import (
+  NUM_FOOTSTEP_OBSERVATIONS,
+  NUM_PATH_OBSERVATIONS,
+)
 
 
 @dataclass
-class PiPlusPpoAlgorithmCfg(RslRlPpoAlgorithmCfg):
+class ChrisDribblePpoAlgorithmCfg(RslRlPpoAlgorithmCfg):
+  # Left-right symmetry for the multi task. Unlike velocity/path this env
+  # actuates the arms (20 DoF) and its command is the MultiCommand composite
+  # [one_hot(6) | velocity(3) | path(2N+2) | footstep(8M) | goal_pose(4) |
+  # kick(7)], so the mirror is built from that block list -- see symmetry.py.
+  # The sub-command sizes are taken from the env cfg's own constants so the two
+  # cannot drift apart.
   symmetry_cfg: dict[str, Any] | None = field(
     default_factory=lambda: {
-      "data_augmentation_func": PiPlusSymmetry(),
-      # NOTE: defaults to False in rsl_rl. Without this, symmetry is enforced
-      # only by the soft mirror loss; enabling it appends mirrored samples to
-      # every mini-batch so the policy gradient itself drives a symmetric gait.
-      "use_data_augmentation": False,
-      "use_mirror_loss": False,
-      "mirror_loss_coeff": 0.5,
+      "data_augmentation_func": PiPlusMultiSymmetry(
+        num_path_observations=NUM_PATH_OBSERVATIONS,
+        num_footstep_observations=NUM_FOOTSTEP_OBSERVATIONS,
+      ),
+      "use_data_augmentation": True,
+      "use_mirror_loss": True,
+      "mirror_loss_coeff": 0.1,
     }
   )
 
@@ -42,7 +52,7 @@ def get_chris_dribble_rl_cfg() -> RslRlOnPolicyRunnerCfg:
       activation="elu",
       obs_normalization=True,
     ),
-    algorithm=PiPlusPpoAlgorithmCfg(
+    algorithm=ChrisDribblePpoAlgorithmCfg(
       value_loss_coef=1.0,
       use_clipped_value_loss=True,
       clip_param=0.2,
@@ -60,5 +70,5 @@ def get_chris_dribble_rl_cfg() -> RslRlOnPolicyRunnerCfg:
     experiment_name="chris_dribble",
     save_interval=200,
     num_steps_per_env=24,
-    max_iterations=3_200,
+    max_iterations=6_400,
   )

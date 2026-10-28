@@ -56,7 +56,7 @@ register_mjlab_task(
   rl_cfg=dribble_mini_rl_cfg(),
   runner_cls=VelocityOnPolicyRunner,
 )
-# Dribble task built step by step from a copy of the velocity task.
+# Dribble task built step by step from a copy of the multi task.
 register_mjlab_task(
   task_id="Mjlab-ChrisDribble-PiPlus",
   env_cfg=chris_dribble_env_cfg(),
