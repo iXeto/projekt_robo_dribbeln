@@ -848,7 +848,7 @@ def chris_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
         # Speed tolerance relative to the commanded strength, so 5 m/s is not
         # held to the same absolute precision as 1 m/s.
         "speed_rel_std": 0.35,
-        "min_ball_speed": 0.01,
+        "min_ball_speed": 0.2,
         # A toe-poke still pays a quarter of a clean side-foot contact: it has
         # to be discoverable before it can be refined away.
         "style_floor": 0.25,
