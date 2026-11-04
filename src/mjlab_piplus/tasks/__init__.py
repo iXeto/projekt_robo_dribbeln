@@ -15,7 +15,17 @@ from .piplus_standup_imitation_env_cfg import piplus_standup_imitation_env_cfg
 from .piplus_standup_imitation_rl_cfg import get_piplus_standup_imitation_rl_cfg
 from .piplus_velocity_env_cfg import piplus_velocity_env_cfg
 from .piplus_velocity_rl_cfg import get_piplus_velocity_rl_cfg
+from .nova_dribble_env_cfg import nova_dribble_env_cfg
+from .nova_dribble_rl_cfg import get_nova_dribble_rl_cfg
 from mjlab_piplus.tasks.mdp.chris_dribble import *
+
+register_mjlab_task(
+  task_id="Mjlab-NovaDribble-PiPlus",
+  env_cfg=nova_dribble_env_cfg(),
+  play_env_cfg=nova_dribble_env_cfg(play=True),
+  rl_cfg=get_nova_dribble_rl_cfg(),
+  runner_cls=VelocityOnPolicyRunner,
+)
 
 register_mjlab_task(
   task_id="Mjlab-Velocity-PiPlus",
