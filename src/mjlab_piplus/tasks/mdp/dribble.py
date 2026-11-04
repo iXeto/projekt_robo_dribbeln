@@ -62,6 +62,6 @@ def dribble_ball_still(
 ) -> torch.Tensor:
   """``exp(-|v_ball - v_target|^2 / std^2)``: the ball rolls as commanded."""
   term = _kick(env, command_name, sub_command_name)
-  speed = torch.norm(term.ball.data.root_link_lin_vel_w[:, :2])
+  speed = torch.norm(term.robot.data.root_link_lin_vel_w[:, :2], dim=1)
   return (speed < vel_threshold).float()
   
