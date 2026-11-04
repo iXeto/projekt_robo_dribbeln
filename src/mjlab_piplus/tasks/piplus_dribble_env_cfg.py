@@ -897,7 +897,7 @@ def piplus_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
       func=pi_mdp.kick_idle,
       # Kills the do-nothing optimum: standing still with a ball to fetch has to
       # cost something, or refusing to engage is free.
-      weight=-100.0,
+      weight=-10.0,
       params={
         "command_name": "command",
         "sub_command_name": "kick",
