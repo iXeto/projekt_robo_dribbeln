@@ -6,11 +6,17 @@ x points forward, y points left, and the torso's pitch and roll are ignored.
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 import torch
 from mjlab.managers.scene_entity_config import SceneEntityCfg
 from mjlab.utils.lab_api.math import quat_apply_inverse, yaw_quat
+
+from mjlab_piplus.tasks.mdp.commands import (
+  UniformVelocityCommandWithStop,
+  UniformVelocityCommandWithStopCfg,
+)
 
 if TYPE_CHECKING:
   from mjlab.envs import ManagerBasedRlEnv
@@ -85,3 +91,31 @@ def ball_near_feet(
   # Squared distance between where the ball is and where it should be.
   dist_sq = torch.sum(torch.square(pos_b - target), dim=1)
   return torch.exp(-dist_sq / std**2)
+
+class BallChaseCommand(UniformVelocityCommandWithStop):
+  """Velocity command that points at the ball every step."""
+
+  cfg: BallChaseCommandCfg
+
+  def _update_command(self) -> None:
+    pos_b = _ball_in_robot_frame(self._env)
+    target = torch.tensor([self.cfg.target_offset, 0.0], device=self.device)
+    err = pos_b - target
+    yaw_err = torch.atan2(pos_b[:, 1], pos_b[:, 0])
+    face = torch.cos(yaw_err).clamp(min=0.0)
+    r = self.cfg.ranges
+    k = self.cfg.gain
+    self.vel_command_b[:, 0] = (k * err[:, 0] * face).clamp(*r.lin_vel_x)
+    self.vel_command_b[:, 1] = (k * err[:, 1] * face).clamp(*r.lin_vel_y)
+    self.vel_command_b[:, 2] = (self.cfg.yaw_gain * yaw_err).clamp(*r.ang_vel_z)
+    self.vel_command_b[self.is_standing_env] = 0.0
+
+
+@dataclass(kw_only=True)
+class BallChaseCommandCfg(UniformVelocityCommandWithStopCfg):
+  gain: float = 1.0
+  yaw_gain: float = 1.0
+  target_offset: float = 0.25
+
+  def build(self, env: ManagerBasedRlEnv) -> BallChaseCommand:
+    return BallChaseCommand(self, env)

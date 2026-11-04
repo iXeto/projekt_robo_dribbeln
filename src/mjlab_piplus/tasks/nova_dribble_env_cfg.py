@@ -194,10 +194,10 @@ def nova_dribble_env_cfg(
       debug_vis=True,
       heading_command=True,
       heading_control_stiffness=0.0,
-      rel_standing_envs=0.075,
-      rel_walk_in_place_envs=0.075,
-      rel_heading_envs=0.3,
-      rel_forward_envs=0.15,
+      rel_standing_envs=0.0,
+      rel_walk_in_place_envs=0.0,
+      rel_heading_envs=0.0,
+      rel_forward_envs=0.0,
       ranges=pi_mdp.UniformVelocityCommandWithStopCfg.Ranges(
         lin_vel_x=(-0.5, 1.0),
         lin_vel_y=(-0.25, 0.25),
@@ -583,7 +583,7 @@ def nova_dribble_env_cfg(
             "ang_vel_z": (-math.pi / 4, math.pi / 4),
           },
           {
-            "step": 800 * 24,
+            "step": 400 * 24,
             "lin_vel_x": (-0.5, 0.8),
             "lin_vel_y": (-0.4, 0.4),
             "ang_vel_z": (-1.5, 1.5),
