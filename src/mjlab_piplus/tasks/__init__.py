@@ -15,7 +15,17 @@ from .piplus_standup_imitation_env_cfg import piplus_standup_imitation_env_cfg
 from .piplus_standup_imitation_rl_cfg import get_piplus_standup_imitation_rl_cfg
 from .piplus_velocity_env_cfg import piplus_velocity_env_cfg
 from .piplus_velocity_rl_cfg import get_piplus_velocity_rl_cfg
-from mjlab_piplus.tasks.mdp.chris_dribble import *
+from .piplus_dribble_env_cfg import piplus_dribble_env_cfg
+from .piplus_dribble_rl_cfg import get_piplus_dribble_rl_cfg
+
+register_mjlab_task(
+  task_id="Mjlab-Dribble-PiPlus",
+  env_cfg=piplus_dribble_env_cfg(),
+  play_env_cfg=piplus_dribble_env_cfg(play=True),
+  rl_cfg=get_piplus_dribble_rl_cfg(),
+  runner_cls=VelocityOnPolicyRunner,
+)
+
 
 register_mjlab_task(
   task_id="Mjlab-Velocity-PiPlus",
@@ -74,12 +84,4 @@ register_mjlab_task(
   play_env_cfg=chris_dribble_env_cfg(play=True),
   rl_cfg=get_chris_dribble_rl_cfg(),
   runner_cls=VelocityOnPolicyRunner,
-)
-# One policy driven by a velocity, path, or stand command, switching between
-# them during the episode.
-register_mjlab_task(
-  task_id="Mjlab-Chrisdribble-PiPlus",
-  env_cfg=chris_dribble_env_cfg(),
-  play_env_cfg=chris_dribble_env_cfg(play=True),
-  rl_cfg=get_chris_dribble_rl_cfg(),
 )
