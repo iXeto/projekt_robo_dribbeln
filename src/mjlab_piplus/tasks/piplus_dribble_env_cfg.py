@@ -883,6 +883,11 @@ def piplus_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
       weight= 3.0,
       params={"command_name": "command", "sub_command_name": "kick"}
     ),
+    "dribble_ball_still": RewardTermCfg(
+      func=pi_mdp.dribble_ball_still,
+      weight= -5.0,
+      params={"command_name": "command", "sub_command_name": "kick"}
+    ),    
     "dribble_ball_proximity": RewardTermCfg(
       func=pi_mdp.dribble_ball_proximity,
       weight=2.0,
@@ -897,7 +902,7 @@ def piplus_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
       func=pi_mdp.kick_idle,
       # Kills the do-nothing optimum: standing still with a ball to fetch has to
       # cost something, or refusing to engage is free.
-      weight=-10.0,
+      weight=-5.0,
       params={
         "command_name": "command",
         "sub_command_name": "kick",
@@ -916,6 +921,7 @@ def piplus_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
       # Cubed cosine, so only a well-aimed approach gets most of the credit.
       "alignment_power": 3.0,
     },
+
     
     ),
 
