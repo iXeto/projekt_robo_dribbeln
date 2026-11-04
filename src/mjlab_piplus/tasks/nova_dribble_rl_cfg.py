@@ -8,13 +8,27 @@ from mjlab.rl import (
 )
 
 from mjlab_piplus.tasks.mdp import PiPlusSymmetry
-
+from mjlab_piplus.tasks.mdp.symmetry import (
+  JOINT_ORDER_12,
+  Mirror,
+  ball_state_block,
+  prefix_blocks,
+  velocity_command_block,
+)
 
 @dataclass
 class PiPlusPpoAlgorithmCfg(RslRlPpoAlgorithmCfg):
   symmetry_cfg: dict[str, Any] | None = field(
     default_factory=lambda: {
-      "data_augmentation_func": PiPlusSymmetry(),
+            "data_augmentation_func": PiPlusSymmetry(
+        obs_mirror=Mirror(
+          [
+            *prefix_blocks(JOINT_ORDER_12),
+            velocity_command_block(stand_flag=True),
+            ball_state_block(),
+          ]
+        )
+      ),
       "use_data_augmentation": False,
       "use_mirror_loss": False,
       "mirror_loss_coeff": 0.5,

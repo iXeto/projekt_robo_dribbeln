@@ -6,6 +6,7 @@ obs or the DoF count changes here, update the symmetry class as well.
 
 import math
 import mujoco
+from mjlab_piplus.tasks.mdp import nova_dribble as nova_mdp
 
 from mjlab.envs import ManagerBasedRlEnvCfg
 from mjlab.envs.mdp import dr
@@ -121,6 +122,9 @@ def nova_dribble_env_cfg(
       func=mdp.generated_commands,
       params={"command_name": "twist"},
     ),
+    "ball": ObservationTermCfg(
+      func=nova_mdp.ball_state,
+    ),
   }
   critic_terms = {
     **actor_terms,
@@ -225,7 +229,7 @@ def nova_dribble_env_cfg(
       func=mdp.reset_root_state_uniform,
       mode="reset",
       params={
-        "pose_range": {"x": (-0.05, 0.05), "y": (-0.05, 0.05)},
+        "pose_range": {"x": (0.0, 1.0), "y": (-0.5, 0.5)},
         "velocity_range": {},
         "asset_cfg": SceneEntityCfg("ball"),
       },
@@ -488,6 +492,17 @@ def nova_dribble_env_cfg(
         "command_name": "twist",
         "asset_cfg": SceneEntityCfg("robot", site_names=foot_sites),
       },
+    ),
+    "ball_approach": RewardTermCfg(
+      func=nova_mdp.ball_near_feet,
+      weight=1.0,
+      params={"std": 1.0, "target_offset": 0.25},
+    ),
+    # narrow: keeps the ball right in front of the feet
+    "ball_in_front": RewardTermCfg(
+      func=nova_mdp.ball_near_feet,
+      weight=1.5,
+      params={"std": 0.3, "target_offset": 0.25},
     ),
     # "soft_landing": RewardTermCfg(
     #   func=pi_mdp.soft_landing,
