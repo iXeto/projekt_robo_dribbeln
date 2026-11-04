@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
+import math
 
 import torch
 from mjlab.managers.scene_entity_config import SceneEntityCfg
@@ -93,20 +94,35 @@ def ball_near_feet(
   return torch.exp(-dist_sq / std**2)
 
 class BallChaseCommand(UniformVelocityCommandWithStop):
-  """Velocity command that points at the ball every step."""
+  """Walk behind the ball, then push it along goal_dir_w."""
 
   cfg: BallChaseCommandCfg
 
+  def __init__(self, cfg: BallChaseCommandCfg, env: ManagerBasedRlEnv) -> None:
+    super().__init__(cfg, env)
+    # World-frame unit vector the ball should travel along (z stays 0).
+    self.goal_dir_w = torch.zeros(self.num_envs, 3, device=self.device)
+    self.goal_dir_w[:, 0] = 1.0
+
+  def _resample_command(self, env_ids: torch.Tensor) -> None:
+    super()._resample_command(env_ids)
+    yaw = torch.empty(len(env_ids), device=self.device).uniform_(-math.pi, math.pi)
+    self.goal_dir_w[env_ids, 0] = torch.cos(yaw)
+    self.goal_dir_w[env_ids, 1] = torch.sin(yaw)
+
   def _update_command(self) -> None:
-    pos_b = _ball_in_robot_frame(self._env)
-    target = torch.tensor([self.cfg.target_offset, 0.0], device=self.device)
-    err = pos_b - target
-    yaw_err = torch.atan2(pos_b[:, 1], pos_b[:, 0])
-    face = torch.cos(yaw_err).clamp(min=0.0)
+    ball_b = _ball_in_robot_frame(self._env)
+    heading = yaw_quat(self.robot.data.root_link_quat_w)
+    dir_b = quat_apply_inverse(heading, self.goal_dir_w)[:, :2]
+    approach_b = ball_b - self.cfg.target_offset * dir_b #ein Punkt 0.25 m hinter dem Ball, auf der Linie Ziel–Ball. Steht der Roboter dort, liegen Ball und Ziel vor ihm.
+    dist = torch.norm(approach_b, dim=1, keepdim=True)
+    close = (dist < self.cfg.close_radius).float()
+    vel = self.cfg.gain * approach_b + close * self.cfg.dribble_speed * dir_b
+    yaw_err = torch.atan2(ball_b[:, 1], ball_b[:, 0])
+    vel = vel * torch.cos(yaw_err).clamp(min=0.0).unsqueeze(1)
     r = self.cfg.ranges
-    k = self.cfg.gain
-    self.vel_command_b[:, 0] = (k * err[:, 0] * face).clamp(*r.lin_vel_x)
-    self.vel_command_b[:, 1] = (k * err[:, 1] * face).clamp(*r.lin_vel_y)
+    self.vel_command_b[:, 0] = vel[:, 0].clamp(*r.lin_vel_x)
+    self.vel_command_b[:, 1] = vel[:, 1].clamp(*r.lin_vel_y)
     self.vel_command_b[:, 2] = (self.cfg.yaw_gain * yaw_err).clamp(*r.ang_vel_z)
     self.vel_command_b[self.is_standing_env] = 0.0
 
@@ -116,6 +132,22 @@ class BallChaseCommandCfg(UniformVelocityCommandWithStopCfg):
   gain: float = 1.0
   yaw_gain: float = 1.0
   target_offset: float = 0.25
+  dribble_speed: float = 0.3
+  close_radius: float = 0.15
 
   def build(self, env: ManagerBasedRlEnv) -> BallChaseCommand:
     return BallChaseCommand(self, env)
+
+
+def ball_velocity_to_goal(
+  env: ManagerBasedRlEnv,
+  max_speed: float = 0.5,
+  command_name: str = "twist",
+  ball_cfg: SceneEntityCfg = _BALL,
+) -> torch.Tensor:
+  """Ball speed along the command's goal direction, scaled to [0, 1]."""
+  term = env.command_manager.get_term(command_name)
+  ball = env.scene[ball_cfg.name]
+  vel_xy = ball.data.root_link_lin_vel_w[:, :2]
+  speed = torch.sum(vel_xy * term.goal_dir_w[:, :2], dim=1)
+  return speed.clamp(0.0, max_speed) / max_speed # Ab max_speed wird nicht mehr belohnt. Wegschießen lohnt sich also nicht.

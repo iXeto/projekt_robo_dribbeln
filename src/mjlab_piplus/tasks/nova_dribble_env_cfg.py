@@ -190,7 +190,7 @@ def nova_dribble_env_cfg(
   commands: dict[str, CommandTermCfg] = {
     "twist": nova_mdp.BallChaseCommandCfg(
       entity_name="robot",
-      resampling_time_range=(3.0, 8.0),
+      resampling_time_range=(20.0, 20.0), #immer genau 20 Sekunden
       debug_vis=True,
       heading_command=True,
       heading_control_stiffness=0.0,
@@ -493,16 +493,16 @@ def nova_dribble_env_cfg(
         "asset_cfg": SceneEntityCfg("robot", site_names=foot_sites),
       },
     ),
-    "ball_approach": RewardTermCfg(
-      func=nova_mdp.ball_near_feet,
-      weight=1.0,
-      params={"std": 1.0, "target_offset": 0.25},
-    ),
     # narrow: keeps the ball right in front of the feet
     "ball_in_front": RewardTermCfg(
       func=nova_mdp.ball_near_feet,
-      weight=1.5,
-      params={"std": 0.3, "target_offset": 0.25},
+      weight=0.5,
+      params={"std": 0.5, "target_offset": 0.25},
+    ),
+    "ball_to_goal": RewardTermCfg(
+      func=nova_mdp.ball_velocity_to_goal,
+      weight=2.0,
+      params={"max_speed": 0.5},
     ),
     # "soft_landing": RewardTermCfg(
     #   func=pi_mdp.soft_landing,
