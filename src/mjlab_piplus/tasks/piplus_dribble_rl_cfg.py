@@ -70,5 +70,5 @@ def get_piplus_dribble_rl_cfg() -> RslRlOnPolicyRunnerCfg:
     experiment_name="piplus_dribble",
     save_interval=200,
     num_steps_per_env=24,
-    max_iterations=6_400,
+    max_iterations=1_500,
   )
