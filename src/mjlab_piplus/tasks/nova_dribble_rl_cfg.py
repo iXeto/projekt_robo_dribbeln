@@ -82,5 +82,5 @@ def get_nova_dribble_rl_cfg() -> RslRlOnPolicyRunnerCfg:
     experiment_name="nova_dribble",
     save_interval=200,
     num_steps_per_env=24,
-    max_iterations=900, #statt 3_200
+    max_iterations=1500, #statt 3_200
   )
