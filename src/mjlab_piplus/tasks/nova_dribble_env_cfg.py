@@ -656,6 +656,7 @@ def nova_dribble_env_cfg(
     scene.num_envs = 1
     events = {  # remove other dr in play mode
       "reset_base": events["reset_base"],
+      "reset_ball": events["reset_ball"],
       "reset_robot_joints": events["reset_robot_joints"],
       # "push_robot": events["push_robot"],
     }
