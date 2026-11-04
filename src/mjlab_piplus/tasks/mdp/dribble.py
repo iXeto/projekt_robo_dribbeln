@@ -57,14 +57,11 @@ def dribble_ball_still(
   env: ManagerBasedRlEnv,
   command_name: str,
   sub_command_name: str | None = None,
+  vel_threshold: float = 0.1,
   std: float = 0.25,
 ) -> torch.Tensor:
   """``exp(-|v_ball - v_target|^2 / std^2)``: the ball rolls as commanded."""
   term = _kick(env, command_name, sub_command_name)
-  ball_vel = term.ball.data.root_link_lin_vel_w[:, :2]
-  err = torch.sum(torch.square(ball_vel - term.target_vel_w), dim=1)
-  min_vel = 0.1
-  ja = 0
-  if (ball_vel < min_vel):
-    ja = 1
-  return ja
+  speed = torch.norm(term.ball.data.root_link_lin_vel_w[:, :2])
+  return (speed < vel_threshold).float()
+  
