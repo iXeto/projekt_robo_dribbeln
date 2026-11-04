@@ -10,7 +10,7 @@ from mjlab_piplus.tasks.mdp.multi_command import resolve_command_term
 if TYPE_CHECKING:
   from mjlab.envs.manager_based_rl_env import ManagerBasedRlEnv
 
-__all__ = ["ball_lost", "dribble_ball_proximity", "dribble_ball_velocity"]
+__all__ = ["ball_lost", "dribble_ball_proximity", "dribble_ball_velocity", "dribble_ball_still"]
 
 def _kick(
   env: ManagerBasedRlEnv, command_name: str, sub_command_name: str | None
