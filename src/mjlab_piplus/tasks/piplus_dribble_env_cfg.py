@@ -880,7 +880,7 @@ def piplus_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
   dribble_rewards = { #NEU
     "dribble_ball_velocity": RewardTermCfg(
       func=pi_mdp.dribble_ball_velocity,
-      weight= 3.0,
+      weight= 10.0,
       params={"command_name": "command", "sub_command_name": "kick"}
     ),
     "dribble_ball_proximity": RewardTermCfg(
