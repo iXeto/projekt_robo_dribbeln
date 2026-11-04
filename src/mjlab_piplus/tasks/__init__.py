@@ -1,10 +1,7 @@
 from mjlab.tasks.registry import register_mjlab_task
 from mjlab.tasks.velocity.rl.runner import VelocityOnPolicyRunner
 
-from .chris_dribble_env_cfg import chris_dribble_env_cfg
-from .chris_dribble_rl_cfg import get_chris_dribble_rl_cfg
-from .dribble_mini_env_cfg import dribble_mini_env_cfg
-from .dribble_mini_rl_cfg import dribble_mini_rl_cfg
+
 from .piplus_multi_env_cfg import piplus_multi_env_cfg
 from .piplus_multi_rl_cfg import get_piplus_multi_rl_cfg
 from .piplus_path_env_cfg import piplus_path_env_cfg
@@ -13,7 +10,9 @@ from .piplus_standup_imitation_env_cfg import piplus_standup_imitation_env_cfg
 from .piplus_standup_imitation_rl_cfg import get_piplus_standup_imitation_rl_cfg
 from .piplus_velocity_env_cfg import piplus_velocity_env_cfg
 from .piplus_velocity_rl_cfg import get_piplus_velocity_rl_cfg
-from mjlab_piplus.tasks.mdp.chris_dribble import *
+
+from .piplus_dribble_env_cfg import piplus_dribble_env_cfg
+from .piplus_dribble_rl_cfg import get_piplus_dribble_rl_cfg #neu
 
 register_mjlab_task(
   task_id="Mjlab-Velocity-PiPlus",
@@ -48,28 +47,13 @@ register_mjlab_task(
   rl_cfg=get_piplus_standup_imitation_rl_cfg(),
   runner_cls=VelocityOnPolicyRunner,
 )
-# Smoke test for dribbling: the velocity task plus a ball to keep in front of
-# the feet and move at the commanded velocity.
+
+
+#NEU
 register_mjlab_task(
-  task_id="Mjlab-DribbleMini-PiPlus",
-  env_cfg=dribble_mini_env_cfg(),
-  play_env_cfg=dribble_mini_env_cfg(play=True),
-  rl_cfg=dribble_mini_rl_cfg(),
+  task_id="Mjlab-Dribble-PiPlus",
+  env_cfg=piplus_dribble_env_cfg(),
+  play_env_cfg=piplus_dribble_env_cfg(play=True),
+  rl_cfg=get_piplus_dribble_rl_cfg(),
   runner_cls=VelocityOnPolicyRunner,
-)
-# Dribble task built step by step from a copy of the multi task.
-register_mjlab_task(
-  task_id="Mjlab-ChrisDribble-PiPlus",
-  env_cfg=chris_dribble_env_cfg(),
-  play_env_cfg=chris_dribble_env_cfg(play=True),
-  rl_cfg=get_chris_dribble_rl_cfg(),
-  runner_cls=VelocityOnPolicyRunner,
-)
-# One policy driven by a velocity, path, or stand command, switching between
-# them during the episode.
-register_mjlab_task(
-  task_id="Mjlab-Chrisdribble-PiPlus",
-  env_cfg=chris_dribble_env_cfg(),
-  play_env_cfg=chris_dribble_env_cfg(play=True),
-  rl_cfg=get_chris_dribble_rl_cfg(),
 )
