@@ -905,6 +905,32 @@ def piplus_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
         "near_dist": 0.0,
       },
     ),
+    "kick_approach": RewardTermCfg( #geklaut aus kick
+    func=pi_mdp.kick_approach,
+    weight=3.0,
+    params={
+      "command_name": "command",
+      "sub_command_name": "kick",
+      # Speed toward the ball in m/s, capped: no bonus for charging it.
+      "max_speed": 2.0,
+      # Cubed cosine, so only a well-aimed approach gets most of the credit.
+      "alignment_power": 3.0,
+    },
+    
+    ),
+
+    "track_linear_velocity": RewardTermCfg(
+      func=pi_mdp.track_linear_velocity,
+      weight=2.0,
+      params={"command_name": "command", "std": math.sqrt(0.125)},
+      command_weights=VELOCITY_AND_STAND,
+    ),
+    "track_angular_velocity": RewardTermCfg(
+      func=pi_mdp.track_angular_velocity,
+      weight=2.0,
+      params={"command_name": "command", "std": math.sqrt(0.5)},
+      command_weights=VELOCITY_AND_STAND,
+    ),
   }
 
   # -- Stability ------------------------------------------------------------
