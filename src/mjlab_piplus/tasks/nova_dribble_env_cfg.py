@@ -1,6 +1,6 @@
 """Nova dribble task: the PiPlus velocity task plus a ball in the scene.
 
-Note: the RL cfg uses ``PiPlusSymmetry`` (12-DoF velocity layout). If the actor
+Note: the RL cfg uses ``NovaSymmetry`` (12-DoF velocity layout). If the actor
 obs or the DoF count changes here, update the symmetry class as well.
 """
 
@@ -37,11 +37,11 @@ from mjlab.entity import EntityCfg
 DELAY_MIN = 1
 DELAY_MAX = 1
 WALK_FREQUENCY = 1.75
-BALL_RADIUS = 0.07
-BALL_MASS = 0.1
+BALL_RADIUS = 0.07 #Radius 7cm also 14cm Durchmesser
+BALL_MASS = 0.1 #100g
 
 
-def get_ball_spec() -> mujoco.MjSpec:
+def get_ball_spec() -> mujoco.MjSpec: #liefert ein MuJoCo-Modell (MjSpec) nur für den Ball.
   spec = mujoco.MjSpec()
   body = spec.worldbody.add_body(name="ball")
   body.add_freejoint()  # Ball kann sich frei bewegen und rollen
@@ -50,9 +50,9 @@ def get_ball_spec() -> mujoco.MjSpec:
     type=mujoco.mjtGeom.mjGEOM_SPHERE,
     size=[BALL_RADIUS, 0, 0],
     mass=BALL_MASS,
-    rgba=[1.0, 0.5, 0.0, 1.0],      # orange
+    rgba=[0.424, 0.227, 0.839, 1.0],      # lila
     condim=6,                        # nötig, damit Rollreibung wirkt
-    friction=[0.8, 0.02, 0.01],      # sonst rollt der Ball ewig weiter
+    friction=[0.8, 0.02, 0.01],      # Gleitreibung 0.8, Drehreibung 0.02, Rollreibung 0.01. Die Rollreibung bremst den Ball, sonst würde er ewig weiterrollen.
   )
   return spec
 
@@ -123,7 +123,7 @@ def nova_dribble_env_cfg(
       params={"command_name": "twist"},
     ),
     "ball": ObservationTermCfg(
-      func=nova_mdp.ball_state,
+      func=nova_mdp.ball_state, #liefert pro Env [x, y, vx, vy] des Balls aus Sicht des Roboters. Ohne Noise oder Delay
     ),
   }
   critic_terms = {
@@ -194,9 +194,9 @@ def nova_dribble_env_cfg(
       debug_vis=True,
       heading_command=True,
       heading_control_stiffness=0.0,
-      rel_standing_envs=0.0,
-      rel_walk_in_place_envs=0.0,
-      rel_heading_envs=0.0,
+      rel_standing_envs=0.0, #stehen bleiben rausgenommen
+      rel_walk_in_place_envs=0.0, #auf der stelle laufen rausgenommen
+      rel_heading_envs=0.0, #drehen im Kreis rausgenommen
       rel_forward_envs=0.0,
       ranges=pi_mdp.UniformVelocityCommandWithStopCfg.Ranges(
         lin_vel_x=(-0.5, 1.0),
@@ -225,12 +225,12 @@ def nova_dribble_env_cfg(
         "velocity_range": {},
       },
     ),
-        "reset_ball": EventTermCfg(
+    "reset_ball": EventTermCfg(
       func=mdp.reset_root_state_uniform,
-      mode="reset",
+      mode="reset", #äuft bei jedem Episoden-Reset einer Env.
       params={
         "pose_range": {"x": (0.0, 1.0), "y": (-0.5, 0.5)},
-        "velocity_range": {},
+        "velocity_range": {}, #Der Ball startet ruhig, mit Geschwindigkeit 0.
         "asset_cfg": SceneEntityCfg("ball"),
       },
     ),
@@ -494,7 +494,7 @@ def nova_dribble_env_cfg(
       },
     ),
     # narrow: keeps the ball right in front of the feet
-    "ball_in_front": RewardTermCfg(
+    "ball_in_front": RewardTermCfg( 
       func=nova_mdp.ball_near_feet,
       weight=0.5,
       params={"std": 0.5, "target_offset": 0.25},
