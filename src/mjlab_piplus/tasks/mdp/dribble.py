@@ -47,11 +47,12 @@ def dribble_ball_proximity(
   env: ManagerBasedRlEnv,
   command_name: str,
   sub_command_name: str | None = None,
-  std: float = 0.3,
+  std: float = 0.15,
 ) -> torch.Tensor:
   """``exp(-d^2 / std^2)``, d = ball to the nearest foot."""
   term = _kick(env, command_name, sub_command_name)
-  nearest = term.foot_dist.min(dim=1).values
+  #nearest = term.foot_dist.min(dim=1).values
+  nearest = torch.norm(term.ball_pos_b - term.ball_pos_b.new_tensor([0.25, 0.0]), dim=1) # damit der Ball nicht zwischen den füßen ist, soll der ca. 25 cm davor sein -> somit sollte er dribbeln
   return torch.exp(-torch.square(nearest) / std**2)
 
 def ball_lost(
