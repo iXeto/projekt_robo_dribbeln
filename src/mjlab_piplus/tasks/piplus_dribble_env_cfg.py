@@ -883,11 +883,16 @@ def piplus_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
       weight= 3.0,
       params={"command_name": "command", "sub_command_name": "kick"}
     ),
-    "dribble_ball_still": RewardTermCfg(
-      func=pi_mdp.dribble_ball_still,
-      weight= -5.0,
+    "dribble_robot_velocity": RewardTermCfg(
+      func=pi_mdp.dribble_robot_velocity,
+      weight= 1.0,
       params={"command_name": "command", "sub_command_name": "kick"}
-    ),    
+    ),
+    # "dribble_ball_still": RewardTermCfg(
+    #   func=pi_mdp.dribble_ball_still,
+    #   weight= -5.0,
+    #   params={"command_name": "command", "sub_command_name": "kick"}
+    # ),    
     "dribble_ball_proximity": RewardTermCfg(
       func=pi_mdp.dribble_ball_proximity,
       weight=2.0,
@@ -902,7 +907,7 @@ def piplus_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
       func=pi_mdp.kick_idle,
       # Kills the do-nothing optimum: standing still with a ball to fetch has to
       # cost something, or refusing to engage is free.
-      weight=-5.0,
+      weight=-1.0,
       params={
         "command_name": "command",
         "sub_command_name": "kick",
@@ -912,12 +917,12 @@ def piplus_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     ),
     "kick_approach": RewardTermCfg( #geklaut aus kick
     func=pi_mdp.kick_approach,
-    weight=3.0,
+    weight=1.0,
     params={
       "command_name": "command",
       "sub_command_name": "kick",
       # Speed toward the ball in m/s, capped: no bonus for charging it.
-      "max_speed": 2.0,
+      "max_speed": 0.5,
       # Cubed cosine, so only a well-aimed approach gets most of the credit.
       "alignment_power": 3.0,
     },

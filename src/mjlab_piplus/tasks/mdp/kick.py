@@ -631,7 +631,7 @@ class KickCommandCfg(CommandTermCfg):
   foot_select_angle_deg: float = 20.0
   """Half-width of the "straight ahead" band in
   :func:`select_kick_foot_is_left`."""
-  approach_foot_offset: float = 0.2
+  approach_foot_offset: float = 0.0 #Neu
   """Metres to offset the approach target sideways toward the striking foot."""
 
   resampling_time_range: tuple[float, float] = (8.0, 16.0)
