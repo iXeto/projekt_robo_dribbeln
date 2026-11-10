@@ -895,19 +895,19 @@ def piplus_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     # ),    
     "dribble_ball_proximity": RewardTermCfg(
       func=pi_mdp.dribble_ball_proximity,
-      weight=2.0,
+      weight=1.0,
       params={"command_name": "command", "sub_command_name": "kick"}
     ),
     "kick_face_ball": RewardTermCfg( #geklaut aus kick
       func=pi_mdp.kick_face_ball,
-      weight=0.5,
+      weight=0.25,
       params={"command_name": "command", "sub_command_name": "kick"},
     ),
     "kick_idle": RewardTermCfg( #geklaut aus kick
       func=pi_mdp.kick_idle,
       # Kills the do-nothing optimum: standing still with a ball to fetch has to
       # cost something, or refusing to engage is free.
-      weight=-1.0,
+      weight=-2.5,
       params={
         "command_name": "command",
         "sub_command_name": "kick",

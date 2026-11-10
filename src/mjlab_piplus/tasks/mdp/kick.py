@@ -834,7 +834,7 @@ def kick_idle(
   env: ManagerBasedRlEnv,
   command_name: str,
   sub_command_name: str | None = None,
-  vel_threshold: float = 0.1,
+  vel_threshold: float = 0.2,
   near_dist: float = 0.35,
 ) -> torch.Tensor:
   """Flat penalty for standing still with an out-of-reach ball still untouched.
