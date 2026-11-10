@@ -23,7 +23,7 @@ def dribble_ball_velocity(
   env: ManagerBasedRlEnv,
   command_name: str,
   sub_command_name: str | None = None,
-  std: float = 0.5,
+  std: float = 0.25,
 ) -> torch.Tensor:
   """``exp(-|v_ball - v_target|^2 / std^2)``: the ball rolls as commanded."""
   term = _kick(env, command_name, sub_command_name)
@@ -35,7 +35,7 @@ def dribble_robot_velocity(
   env: ManagerBasedRlEnv,
   command_name: str,
   sub_command_name: str | None = None,
-  std: float = 0.5,
+  std: float = 0.25,
 ) -> torch.Tensor:
   """``exp(-|v_ball - v_target|^2 / std^2)``: the ball rolls as commanded."""
   term = _kick(env, command_name, sub_command_name)

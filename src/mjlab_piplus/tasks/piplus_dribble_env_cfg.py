@@ -369,7 +369,8 @@ def piplus_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
           debug_vis=True,
           # Long enough for several ball lives: the ball comes back after every
           # kick, so this only bounds how long the kick task is handed out for.
-          resampling_time_range=(8.0, 16.0),
+          #resampling_time_range=(8.0, 16.0), NEU
+          resampling_time_range=(100.0, 100.0),
           # Placed within a 60 degree fan either side of where the robot is
           # facing, at most 1.2 m away whatever the bearing.
           # distance_range=(0.3, 1.2), NEU
@@ -382,13 +383,16 @@ def piplus_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
           # direction_cone_deg=135.0, NEU
           # strength_range=(0.5, 5.0),
           direction_cone_deg=35.0,
-          strength_range=(0.2, 0.5), #Anpassen
+          strength_range=(0.2, 0.6), #Anpassen
           park_position=(100.0, 100.0),
           # Ball speed that counts as a strike, and how long the kick is scored
           # for afterwards before the ball is re-placed.
           #contact_speed=0.5, NEU
           contact_speed=100.0,
           window_s=1.0,
+
+          #NEU
+          approach_foot_offset=0.0
         ),
         #"stand": pi_mdp.StandCommandCfg(resampling_time_range=(2.0, 5.0)), NEU
       },
