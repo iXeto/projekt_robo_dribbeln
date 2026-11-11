@@ -375,7 +375,7 @@ def piplus_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
           # facing, at most 1.2 m away whatever the bearing.
           # distance_range=(0.3, 1.2), NEU
           # placement_cone_deg=60.0,
-          distance_range=(0.25, 0.4),
+          distance_range=(0.25, 0.8),
           placement_cone_deg=90.0,
           # Target direction within this cone of the robot's heading at
           # placement -- a direction it can plausibly hit from where it stands.
@@ -899,12 +899,12 @@ def piplus_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     # ),    
     "dribble_ball_proximity": RewardTermCfg(
       func=pi_mdp.dribble_ball_proximity,
-      weight=1.0,
+      weight=0.75,
       params={"command_name": "command", "sub_command_name": "kick"}
     ),
     "kick_face_ball": RewardTermCfg( #geklaut aus kick
       func=pi_mdp.kick_face_ball,
-      weight=0.5,
+      weight=0.25,
       params={"command_name": "command", "sub_command_name": "kick"},
     ),
     "kick_idle": RewardTermCfg( #geklaut aus kick
@@ -929,10 +929,10 @@ def piplus_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
       "max_speed": 0.5,
       # Cubed cosine, so only a well-aimed approach gets most of the credit.
       "alignment_power": 3.0,
-    },
-
-    
+      },
     ),
+
+
 
     # "track_linear_velocity": RewardTermCfg(
     #   func=pi_mdp.track_linear_velocity,
