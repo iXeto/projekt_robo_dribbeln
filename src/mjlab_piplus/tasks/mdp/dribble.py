@@ -115,7 +115,7 @@ class dribble_to_goal_pos: # generiert random ziele für den Ball, die der Robot
         env: ManagerBasedRlEnv,
         command_name: str,
         sub_command_name: str | None = None,
-        std: float = 3.0,
+        std: float = 2.0,
     ) -> torch.Tensor:
         term = _kick(env, command_name, sub_command_name)
         
