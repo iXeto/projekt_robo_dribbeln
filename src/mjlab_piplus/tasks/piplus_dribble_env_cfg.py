@@ -398,7 +398,7 @@ def piplus_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
       },
     ) 
   }
-
+# angepasst 3.0 -> 0.0
   ##
   # Events
   ##
@@ -700,7 +700,7 @@ def piplus_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
   #     params={
   #       "command_name": "command",
   #       "sub_command_name": "footstep",
-  #       "std": 0.03,
+  #       "std": 0.03,# angepasst 3.0 -> 0.0
   #     },
   #     command_weights=FOOTSTEP_ONLY,
   #   ),
@@ -818,7 +818,7 @@ def piplus_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
   #       "command_name": "command",
   #       "sub_command_name": "kick",
   #       "vel_threshold": 0.1,
-  #       # Inside this radius the robot is planting to swing, not loitering.
+  #       # Inside this radius the robot is planting to swing, no# angepasst 3.0 -> 0.0t loitering.
   #       "near_dist": 0.35,
   #     },
   #     command_weights=KICK_ONLY,
@@ -889,7 +889,7 @@ def piplus_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     ),
     "dribble_robot_velocity": RewardTermCfg(
       func=pi_mdp.dribble_robot_velocity,
-      weight= 1.0,
+      weight= 0.0, # angepasst 1.0 -> 0.0
       params={"command_name": "command", "sub_command_name": "kick"}
     ),
     # "dribble_ball_still": RewardTermCfg(
