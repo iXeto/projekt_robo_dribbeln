@@ -935,7 +935,7 @@ def piplus_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     #Neuer
     "dribble_to_goal_pos": RewardTermCfg(
     func=pi_mdp.dribble_to_goal_pos,
-    weight=10.0,
+    weight=3.0,
     params={
       "command_name": "command", 
       "sub_command_name": "kick",
@@ -945,7 +945,7 @@ def piplus_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
 
     "dribble_to_goal_vel": RewardTermCfg(
     func=pi_mdp.dribble_to_goal_vel,
-    weight=10.0,
+    weight=2.0,
     params={
       "command_name": "command", 
       "sub_command_name": "kick",
