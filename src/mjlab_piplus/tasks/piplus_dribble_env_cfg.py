@@ -383,7 +383,7 @@ def piplus_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
           # direction_cone_deg=135.0, NEU
           # strength_range=(0.5, 5.0),
           direction_cone_deg=35.0,
-          strength_range=(0.2, 1.0), #Anpassen
+          strength_range=(0.2, 0.8), #Anpassen
           park_position=(100.0, 100.0),
           # Ball speed that counts as a strike, and how long the kick is scored
           # for afterwards before the ball is re-placed.
