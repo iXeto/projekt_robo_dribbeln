@@ -939,7 +939,7 @@ def piplus_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     params={
       "command_name": "command", 
       "sub_command_name": "kick",
-      "std": 1.0
+      "std": 2.0
       },
     ),
 
