@@ -884,7 +884,7 @@ def piplus_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
   dribble_rewards = { #NEU
     "dribble_ball_velocity": RewardTermCfg(
       func=pi_mdp.dribble_ball_velocity,
-      weight= 3.0,
+      weight= 0.0, # angepasst 3.0 -> 0.0
       params={"command_name": "command", "sub_command_name": "kick"}
     ),
     "dribble_robot_velocity": RewardTermCfg(
@@ -932,7 +932,26 @@ def piplus_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
       },
     ),
 
+    #Neuer
+    "dribble_to_goal_pos": RewardTermCfg(
+    func=pi_mdp.dribble_to_goal_pos,
+    weight=10.0,
+    params={
+      "command_name": "command", 
+      "sub_command_name": "kick",
+      "std": 5.0
+      },
+    ),
 
+    "dribble_to_goal_vel": RewardTermCfg(
+    func=pi_mdp.dribble_to_goal_vel,
+    weight=10.0,
+    params={
+      "command_name": "command", 
+      "sub_command_name": "kick",
+      "max_speed": 1.5
+      },
+    ),
 
     # "track_linear_velocity": RewardTermCfg(
     #   func=pi_mdp.track_linear_velocity,
