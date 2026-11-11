@@ -880,7 +880,7 @@ def piplus_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
   dribble_rewards = { #NEU
     "dribble_ball_velocity": RewardTermCfg(
       func=pi_mdp.dribble_ball_velocity,
-      weight= 3.0,
+      weight= 0.0, #Neuer
       params={"command_name": "command", "sub_command_name": "kick"}
     ),
     "dribble_ball_still": RewardTermCfg(
@@ -921,8 +921,70 @@ def piplus_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
       # Cubed cosine, so only a well-aimed approach gets most of the credit.
       "alignment_power": 3.0,
     },
-
     
+    
+    ),
+
+    #Neuer
+    "dribble_to_goal_pos": RewardTermCfg(
+        func=pi_mdp.dribble_to_goal_pos,
+        weight=10.0,
+        params={
+            "command_name": "command", 
+            "sub_command_name": "kick",
+            "std": 5.0
+    },
+    ),
+
+    "dribble_to_goal_vel": RewardTermCfg(
+            func=pi_mdp.dribble_to_goal_vel,
+            weight=10.0,
+            params={
+                "command_name": "command", 
+                "sub_command_name": "kick",
+                "max_speed": 1.5
+        },
+        ),
+
+    "dribble_behind_ball": RewardTermCfg( # inspiration
+        func=pi_mdp.dribble_behind_ball,
+        weight=0.0,  # Mit Gewicht 2.0 ansetzen, damit die Ausrichtung belohnt, aber das eigentliche Tor (Gewicht 10.0) nicht überwogen wird
+        params={
+            "command_name": "command", 
+            "sub_command_name": "kick",
+        },
+    ),
+
+    "dribble_ball_stop_at_goal": RewardTermCfg( # inspiration
+        func=pi_mdp.dribble_ball_stop_at_goal,
+        weight=3.0,  # Gewicht 3.0 gibt dem Roboter einen deutlichen Anreiz, das Dribbeln am Ziel abzubresen
+        params={
+            "command_name": "command", 
+            "sub_command_name": "kick",
+            "near_dist": 0.5,   # Greift im Umkreis von 50 cm um das Ziel
+            "speed_std": 0.2,   # Erfordert ein Balltempo nahe 0 m/s für Punkte
+        },
+    ),
+
+    # Oberkörper auf das Ziel ausrichten
+    "robot_facing_goal": RewardTermCfg( # inspiration
+        func=pi_mdp.robot_facing_goal,
+        weight=1.0,  # Leichtes Gewicht, unterstützt sauberes Ausrichten beim Dribbeln
+        params={
+            "command_name": "command", 
+            "sub_command_name": "kick",
+        },
+    ),
+
+    # Strafe gegen zu weites Wegkicken ("Kick-and-Rush")
+    "dribble_ball_drift_penalty": RewardTermCfg( # inspiration
+        func=pi_mdp.dribble_ball_drift_penalty,
+        weight=2.0,  # Strafe für jeden Zentimeter über 80 cm Abstand
+        params={
+            "command_name": "command", 
+            "sub_command_name": "kick",
+            "max_dribble_dist": 0.8,  # Ab 80 cm Distanz greift die Strafe
+        },
     ),
 
     # "track_linear_velocity": RewardTermCfg(
