@@ -7,6 +7,9 @@ import torch
 from mjlab_piplus.tasks.mdp.kick import KickCommand
 from mjlab_piplus.tasks.mdp.multi_command import resolve_command_term
 
+import math
+from mjlab.managers.reward_manager import RewardTermCfg
+
 if TYPE_CHECKING:
   from mjlab.envs.manager_based_rl_env import ManagerBasedRlEnv
 
