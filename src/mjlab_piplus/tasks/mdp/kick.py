@@ -575,7 +575,7 @@ class KickCommand(CommandTerm):
     for batch in env_indices:
       # Arrow from the ball along the commanded kick, scaled by strength. Green
       # while the post-kick window is being scored, orange while approaching.
-      length = 0.15 * float(strengths[batch])
+      length = 1.0 * float(strengths[batch]) #NEU Arrow
       start = np.array([ball_xy[batch, 0], ball_xy[batch, 1], BALL_RADIUS])
       end = start + np.array(
         [length * math.cos(dirs[batch]), length * math.sin(dirs[batch]), 0.0]
