@@ -904,7 +904,7 @@ def piplus_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     ),
     "kick_face_ball": RewardTermCfg( #geklaut aus kick
       func=pi_mdp.kick_face_ball,
-      weight=0.25,
+      weight=1.0,
       params={"command_name": "command", "sub_command_name": "kick"},
     ),
     "kick_idle": RewardTermCfg( #geklaut aus kick
@@ -921,7 +921,7 @@ def piplus_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     ),
     "kick_approach": RewardTermCfg( #geklaut aus kick
     func=pi_mdp.kick_approach,
-    weight=1.0,
+    weight=0.0,
     params={
       "command_name": "command",
       "sub_command_name": "kick",
