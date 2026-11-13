@@ -59,7 +59,7 @@ def ball_lost(
   env: ManagerBasedRlEnv,
   command_name: str,
   sub_command_name: str | None = None,
-  max_dist: float = 1.2,
+  max_dist: float = 1.3,
 ) -> torch.Tensor:
   """End the episode once the ball is more than ``max_dist`` from both feet."""
   term = _kick(env, command_name, sub_command_name)
