@@ -37,10 +37,11 @@ def dribble_robot_velocity(
   sub_command_name: str | None = None,
   std: float = 0.25,
 ) -> torch.Tensor:
-  """``exp(-|v_ball - v_target|^2 / std^2)``: the ball rolls as commanded."""
+  """``exp(-|v_ball - v_target|^2 / std^2)``: the robot rolls as commanded."""
   term = _kick(env, command_name, sub_command_name)
   ball_vel = term.robot.data.root_link_lin_vel_w[:, :2]
-  err = torch.sum(torch.square(ball_vel - term.target_vel_w), dim=1)
+  target = term.strength.unsqueeze(1) * term.approach_dir_w # soll zu ball laufen NEU
+  err = torch.sum(torch.square(ball_vel - target), dim=1) 
   return torch.exp(-err / std**2)
 
 def dribble_ball_proximity(
