@@ -72,10 +72,11 @@ def dribble_ball_still(
   command_name: str,
   sub_command_name: str | None = None,
   vel_threshold: float = 0.1,
-  std: float = 0.25,
+  near_dist: float = 0.5
 ) -> torch.Tensor:
   """``exp(-|v_ball - v_target|^2 / std^2)``: the ball rolls as commanded."""
   term = _kick(env, command_name, sub_command_name)
   speed = torch.norm(term.ball.data.root_link_lin_vel_w[:, :2], dim=1) # war falsch dort stand robo nicht ball NEU
-  return (speed < vel_threshold).float()
+  dist = torch.norm(term.ball_pos_b, dim=1) #Abstand robo und ball, damit die strafe erst gilt, wenn er ihn auch speilen könnte NEU
+  return ((speed < vel_threshold) & dist < near_dist).float()
   
