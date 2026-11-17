@@ -78,5 +78,5 @@ def dribble_ball_still(
   term = _kick(env, command_name, sub_command_name)
   speed = torch.norm(term.ball.data.root_link_lin_vel_w[:, :2], dim=1) # war falsch dort stand robo nicht ball NEU
   dist = torch.norm(term.ball_pos_b, dim=1) #Abstand robo und ball, damit die strafe erst gilt, wenn er ihn auch speilen könnte NEU
-  return ((speed < vel_threshold) & dist < near_dist).float()
+  return ((speed < vel_threshold) & (dist < near_dist)).float()
   
