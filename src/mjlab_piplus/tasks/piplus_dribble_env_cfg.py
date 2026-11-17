@@ -892,11 +892,11 @@ def piplus_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
       weight= 1.0,
       params={"command_name": "command", "sub_command_name": "kick"}
     ),
-    # "dribble_ball_still": RewardTermCfg(
-    #   func=pi_mdp.dribble_ball_still,
-    #   weight= -5.0,
-    #   params={"command_name": "command", "sub_command_name": "kick"}
-    # ),    
+    "dribble_ball_still": RewardTermCfg(
+      func=pi_mdp.dribble_ball_still,
+      weight= -2.5,
+      params={"command_name": "command", "sub_command_name": "kick"}
+    ),    
     "dribble_ball_proximity": RewardTermCfg(
       func=pi_mdp.dribble_ball_proximity,
       weight=0.75,

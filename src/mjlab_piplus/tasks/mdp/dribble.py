@@ -10,7 +10,7 @@ from mjlab_piplus.tasks.mdp.multi_command import resolve_command_term
 if TYPE_CHECKING:
   from mjlab.envs.manager_based_rl_env import ManagerBasedRlEnv
 
-__all__ = ["ball_lost", "dribble_ball_proximity", "dribble_ball_velocity", "dribble_robot_velocity"]
+__all__ = ["ball_lost", "dribble_ball_proximity", "dribble_ball_velocity", "dribble_robot_velocity", "dribble_ball_still"]
 
 def _kick(
   env: ManagerBasedRlEnv, command_name: str, sub_command_name: str | None
@@ -67,15 +67,15 @@ def ball_lost(
   nearest = term.foot_dist.min(dim=1).values
   return (env.episode_length_buf > 5) & (nearest > max_dist)
 
-# def dribble_ball_still(
-#   env: ManagerBasedRlEnv,
-#   command_name: str,
-#   sub_command_name: str | None = None,
-#   vel_threshold: float = 0.1,
-#   std: float = 0.25,
-# ) -> torch.Tensor:
-#   """``exp(-|v_ball - v_target|^2 / std^2)``: the ball rolls as commanded."""
-#   term = _kick(env, command_name, sub_command_name)
-#   speed = torch.norm(term.robot.data.root_link_lin_vel_w[:, :2], dim=1)
-#   return (speed < vel_threshold).float()
+def dribble_ball_still(
+  env: ManagerBasedRlEnv,
+  command_name: str,
+  sub_command_name: str | None = None,
+  vel_threshold: float = 0.1,
+  std: float = 0.25,
+) -> torch.Tensor:
+  """``exp(-|v_ball - v_target|^2 / std^2)``: the ball rolls as commanded."""
+  term = _kick(env, command_name, sub_command_name)
+  speed = torch.norm(term.ball.data.root_link_lin_vel_w[:, :2], dim=1) # war falsch dort stand robo nicht ball NEU
+  return (speed < vel_threshold).float()
   
