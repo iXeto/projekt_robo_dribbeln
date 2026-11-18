@@ -383,7 +383,7 @@ def piplus_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
           # direction_cone_deg=135.0, NEU
           # strength_range=(0.5, 5.0),
           direction_cone_deg=35.0,
-          strength_range=(0.5, 0.8), #Anpassen
+          strength_range=(0.3, 0.8), #Anpassen
           park_position=(100.0, 100.0),
           # Ball speed that counts as a strike, and how long the kick is scored
           # for afterwards before the ball is re-placed.
@@ -904,31 +904,36 @@ def piplus_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     ),
     "kick_face_ball": RewardTermCfg( #geklaut aus kick
       func=pi_mdp.kick_face_ball,
-      weight=1.0,
+      weight=0.25,
       params={"command_name": "command", "sub_command_name": "kick"},
     ),
-    "kick_idle": RewardTermCfg( #geklaut aus kick
-      func=pi_mdp.kick_idle,
-      # Kills the do-nothing optimum: standing still with a ball to fetch has to
-      # cost something, or refusing to engage is free.
+    "dribble_idle": RewardTermCfg(
+      func=pi_mdp.dribble_idle,
       weight=-2.5,
+      params={"command_name": "command", "sub_command_name": "kick"},
+    ),
+    # "kick_idle": RewardTermCfg( #geklaut aus kick
+    #   func=pi_mdp.kick_idle,
+    #   # Kills the do-nothing optimum: standing still with a ball to fetch has to
+    #   # cost something, or refusing to engage is free.
+    #   weight=-2.5,
+    #   params={
+    #     "command_name": "command",
+    #     "sub_command_name": "kick",
+    #     # Inside this radius the robot is planting to swing, not loitering.
+    #     "near_dist": 0.0,
+    #   },
+    # ),
+    "kick_approach": RewardTermCfg( #geklaut aus kick
+      func=pi_mdp.kick_approach,
+      weight=0.0,
       params={
         "command_name": "command",
         "sub_command_name": "kick",
-        # Inside this radius the robot is planting to swing, not loitering.
-        "near_dist": 0.0,
-      },
-    ),
-    "kick_approach": RewardTermCfg( #geklaut aus kick
-    func=pi_mdp.kick_approach,
-    weight=0.0,
-    params={
-      "command_name": "command",
-      "sub_command_name": "kick",
-      # Speed toward the ball in m/s, capped: no bonus for charging it.
-      "max_speed": 0.5,
-      # Cubed cosine, so only a well-aimed approach gets most of the credit.
-      "alignment_power": 3.0,
+        # Speed toward the ball in m/s, capped: no bonus for charging it.
+        "max_speed": 0.5,
+        # Cubed cosine, so only a well-aimed approach gets most of the credit.
+        "alignment_power": 3.0,
       },
     ),
 

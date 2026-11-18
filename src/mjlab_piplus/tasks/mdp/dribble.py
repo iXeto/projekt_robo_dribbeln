@@ -10,7 +10,7 @@ from mjlab_piplus.tasks.mdp.multi_command import resolve_command_term
 if TYPE_CHECKING:
   from mjlab.envs.manager_based_rl_env import ManagerBasedRlEnv
 
-__all__ = ["ball_lost", "dribble_ball_proximity", "dribble_ball_velocity", "dribble_robot_velocity"]
+__all__ = ["ball_lost", "dribble_ball_proximity", "dribble_ball_velocity", "dribble_robot_velocity", "dribble_idle"]
 
 def _kick(
   env: ManagerBasedRlEnv, command_name: str, sub_command_name: str | None
@@ -78,4 +78,19 @@ def ball_lost(
 #   term = _kick(env, command_name, sub_command_name)
 #   speed = torch.norm(term.robot.data.root_link_lin_vel_w[:, :2], dim=1)
 #   return (speed < vel_threshold).float()
+
+def dribble_idle( #aus kick_idle
+  env: ManagerBasedRlEnv,
+  command_name: str,
+  sub_command_name: str | None = None,
+  vel_threshold: float = 0.1,
+  near_dist: float = 0.2,
+) -> torch.Tensor:
+  """ belohnt Robot fürs zugehen auf den ball
+  """
+  term = _kick(env, command_name, sub_command_name)
+  ball_speed = torch.norm(term.ball.data.root_link_lin_vel_w[:, :2], dim=1)
+  robo_vel = term.robot.data.root_link_lin_vel_w[:, :2]
+  dist = torch.sum(robo_vel * term.approach_dir_w, dim=1)
+  return ((ball_speed < vel_threshold) & (dist > near_dist)).float()
   
