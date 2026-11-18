@@ -179,6 +179,14 @@ class KickCommand(CommandTerm):
     self.kick_dir_w = torch.zeros(self.num_envs, device=self.device)
     self.strength = torch.zeros(self.num_envs, device=self.device)
 
+    # Ziel: Zielpunkt in Welt-xy, Abstand Ball->Ziel, das beim Platzieren
+    # gezogene Höchsttempo (strength wird jetzt jeden Schritt heruntergebremst)
+    # und ob der Ball am Ziel angekommen ist.
+    self.target_pos_w = torch.zeros(self.num_envs, 2, device=self.device)
+    self.goal_dist = torch.zeros(self.num_envs, device=self.device)
+    self.max_strength = torch.zeros(self.num_envs, device=self.device)
+    self.arrived = torch.zeros(self.num_envs, dtype=torch.bool, device=self.device)
+
     # Ball lifecycle state. ``touched`` is the phase flag (approach vs. window),
     # ``window_left`` counts the post-kick scoring window down in steps, and
     # ``style``/``foot_correct`` are frozen at the moment of the strike.
@@ -326,6 +334,8 @@ class KickCommand(CommandTerm):
 
     self._pending_forward[env_ids] = distance * torch.cos(bearing)
     self._pending_side[env_ids] = distance * torch.sin(bearing)
+    # Ziel: neues Ziel = noch nicht angekommen.
+    self.arrived[env_ids] = False
     self._pending_place[env_ids] = True
 
     self.touched[env_ids] = False
@@ -365,6 +375,22 @@ class KickCommand(CommandTerm):
     self.strength[env_ids] = torch.empty(n, device=self.device).uniform_(
       *self.cfg.strength_range
     )
+
+    # NEU Ziel: gezogenes strength als Höchsttempo merken (strength selbst wird
+    # ab jetzt jeden Schritt in _update_command heruntergebremst).
+    self.max_strength[env_ids] = self.strength[env_ids]
+    # Ziel vom BALL aus, in einem Fächer um die Blickrichtung des Roboters,
+    # damit es anfangs gut erreichbar ist.
+    goal_cone = math.radians(self.cfg.goal_cone_deg)
+    goal_yaw = yaw + torch.empty(n, device=self.device).uniform_(-goal_cone, goal_cone)
+    goal_dist = torch.empty(n, device=self.device).uniform_(
+      *self.cfg.goal_distance_range
+    )
+    ball_xy = base_xy + offset  # dieselbe Position, an die der Ball oben geschrieben wurde
+    self.target_pos_w[env_ids] = ball_xy + goal_dist.unsqueeze(1) * torch.stack(
+      [torch.cos(goal_yaw), torch.sin(goal_yaw)], dim=1
+    )
+
     self._pending_place[env_ids] = False
 
   def _resample_command(self, env_ids: torch.Tensor) -> None:
@@ -416,7 +442,29 @@ class KickCommand(CommandTerm):
       ],
       dim=1,
     )
-    self.dir_err = wrap_to_pi(self.kick_dir_w - heading)
+    # NEU Ziel: nur wenn use_goal an ist (piplus_dribble). Der Multi-Task nutzt
+    # denselben KickCommand und muss seinen festen Kick-Pfeil behalten.
+    if self.cfg.use_goal:
+      # Pfeil zeigt jeden Schritt vom Ball zum Ziel (statt fester Richtung).
+      to_goal = self.target_pos_w - pos_w
+      self.goal_dist = torch.norm(to_goal, dim=1)
+      new_dir = torch.atan2(to_goal[:, 1], to_goal[:, 0])
+      # Liegt der Ball fast genau auf dem Ziel, springt atan2 wild -> alte Richtung behalten.
+      self.kick_dir_w = torch.where(self.goal_dist > 0.05, new_dir, self.kick_dir_w)
+      # Bremsprofil: weit weg volles Tempo, nah am Ziel langsamer, am Ziel 0.
+      # Die Policy sieht strength in der Observation -> sie "weiß", wann sie bremsen muss.
+      self.strength = torch.minimum(
+        self.max_strength, self.cfg.brake_gain * self.goal_dist
+      )
+      # Angekommen mit Hysterese: an bei nah + ruhig, aus erst wenn deutlich weggerollt.
+      ball_speed = torch.norm(vel_w, dim=1)
+      enter = (self.goal_dist < self.cfg.arrive_radius) & (
+        ball_speed < self.cfg.arrive_ball_speed
+      )
+      leave = self.goal_dist > self.cfg.leave_radius
+      self.arrived = (self.arrived | enter) & ~leave
+
+    self.dir_err = wrap_to_pi(self.kick_dir_w - heading)  # unverändert, nur nach unten gerutscht
 
     self._update_approach_geometry(cos_h, sin_h)
     self._update_cycle(active, vel_w)
@@ -572,6 +620,9 @@ class KickCommand(CommandTerm):
     dirs = self.kick_dir_w.cpu().numpy()
     strengths = self.strength.cpu().numpy()
     in_window = (self.window_left > 0).cpu().numpy()
+    # NEU Ziel: für die Ziel-Kugel im Viewer.
+    goals = self.target_pos_w.cpu().numpy()
+    arrived = self.arrived.cpu().numpy()
     for batch in env_indices:
       # Arrow from the ball along the commanded kick, scaled by strength. Green
       # while the post-kick window is being scored, orange while approaching.
@@ -582,6 +633,12 @@ class KickCommand(CommandTerm):
       )
       color = (0.2, 0.9, 0.3, 0.9) if in_window[batch] else (1.0, 0.4, 0.0, 0.9)
       visualizer.add_arrow(start, end, color=color, width=0.02)
+      # NEU Ziel: Kugel am Ziel, blau = unterwegs, grün = angekommen.
+      if self.cfg.use_goal:
+        goal_color = (0.2, 0.9, 0.3, 0.8) if arrived[batch] else (0.2, 0.4, 1.0, 0.8)
+        visualizer.add_sphere(
+          np.array([goals[batch, 0], goals[batch, 1], 0.05]), 0.1, color=goal_color
+        )
 
 
 @dataclass(kw_only=True)
@@ -633,6 +690,25 @@ class KickCommandCfg(CommandTermCfg):
   :func:`select_kick_foot_is_left`."""
   approach_foot_offset: float = 0.0 #Neu
   """Metres to offset the approach target sideways toward the striking foot."""
+  #Ziel: Punkt, zu dem der Ball gedribbelt werden soll.
+  use_goal: bool = False
+  """Schalter für den Ziel-Modus. Aus (Standard): normaler Kick mit festem Pfeil,
+  wie im Multi-Task. An (piplus_dribble): Pfeil zeigt zum Ziel, Tempo bremst vor
+  dem Ziel, und am Ziel wird "arrived" gesetzt (-> Stehen über stand_mask)."""
+  goal_distance_range: tuple[float, float] = (1.0, 2.0)
+  """Abstand Ziel <-> Ball beim Platzieren, in Metern."""
+  goal_cone_deg: float = 35.0
+  """Ziel liegt in diesem Fächer um die Blickrichtung des Roboters (±Grad)."""
+  brake_gain: float = 1.0
+  """Bremsprofil: Soll-Tempo = min(strength, brake_gain * Abstand zum Ziel).
+  Bei 1.0: 0.5 m vor dem Ziel höchstens 0.5 m/s, am Ziel 0."""
+  arrive_radius: float = 0.2
+  """Ball näher als das am Ziel (und ruhig) -> angekommen."""
+  arrive_ball_speed: float = 0.1
+  """Ball muss langsamer als das sein (m/s), damit es als angekommen zählt."""
+  leave_radius: float = 0.4
+  """Erst wenn der Ball weiter als das wegrollt, gilt es wieder als nicht
+  angekommen. Abstand zu arrive_radius = Hysterese, sonst flackert der Zustand."""
 
   resampling_time_range: tuple[float, float] = (8.0, 16.0)
 

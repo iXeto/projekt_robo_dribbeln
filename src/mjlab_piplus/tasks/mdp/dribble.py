@@ -10,7 +10,7 @@ from mjlab_piplus.tasks.mdp.multi_command import resolve_command_term
 if TYPE_CHECKING:
   from mjlab.envs.manager_based_rl_env import ManagerBasedRlEnv
 
-__all__ = ["ball_lost", "dribble_ball_proximity", "dribble_ball_velocity", "dribble_robot_velocity", "dribble_idle"]
+__all__ = ["ball_lost", "dribble_ball_proximity", "dribble_ball_velocity", "dribble_robot_velocity", "dribble_idle", "dribble_ball_at_goal", "dribble_stand_still"]
 
 def _kick(
   env: ManagerBasedRlEnv, command_name: str, sub_command_name: str | None
@@ -93,4 +93,30 @@ def dribble_idle( #aus kick_idle
   robo_vel = term.robot.data.root_link_lin_vel_w[:, :2]
   dist = torch.sum(robo_vel * term.approach_dir_w, dim=1)
   return ((ball_speed < vel_threshold) & (dist > near_dist)).float()
+
+
+def dribble_ball_at_goal(  # NEU Ziel
+  env: ManagerBasedRlEnv,
+  command_name: str,
+  sub_command_name: str | None = None,
+  std: float = 0.3,
+) -> torch.Tensor:
+  """exp(-d^2 / std^2), d = Abstand Ball -> Ziel. Zahlt JEDEN Schritt, solange der
+  Ball am Ziel liegt. 0.3 m weg -> 0.37, 0.6 m weg -> 0.02."""
+  term = _kick(env, command_name, sub_command_name)
+  return torch.exp(-torch.square(term.goal_dist) / std**2)
+
+
+def dribble_stand_still(  # NEU Ziel
+  env: ManagerBasedRlEnv,
+  command_name: str,
+  sub_command_name: str | None = None,
+  std: float = 0.2,
+) -> torch.Tensor:
+  """Nur wenn angekommen: belohnt Roboter-Geschwindigkeit ~0 (laufen + drehen).
+  Vorher immer 0, damit es das Dribbeln nicht bremst."""
+  term = _kick(env, command_name, sub_command_name)
+  lin = torch.sum(torch.square(term.robot.data.root_link_lin_vel_w[:, :2]), dim=1)
+  ang = torch.square(term.robot.data.root_link_ang_vel_w[:, 2])
+  return term.arrived.float() * torch.exp(-(lin + ang) / std**2)
   

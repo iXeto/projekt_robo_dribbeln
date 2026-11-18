@@ -245,11 +245,23 @@ class MultiCommand(CommandTerm):
     *moving* command and must keep the walking regime (loose posture std,
     running gait clock), or it silently switches to the standing regime for the
     rest of its dwell at the goal.
+
+    Exception (dribble to goal): a sub-command with an ``arrived`` tensor -- only
+    ``KickCommand`` has one -- opts in to standing once it has arrived.
     """
     name = self.cfg.stand_command_name
-    if name not in self.terms:
-      return torch.zeros(self.num_envs, dtype=torch.bool, device=self.device)
-    return self.active_mask(name)
+    if name in self.terms:
+      mask = self.active_mask(name)
+    else:
+      mask = torch.zeros(self.num_envs, dtype=torch.bool, device=self.device)
+    # NEU Ziel: Ein Sub-Command mit "arrived"-Flag (aktuell nur KickCommand) darf
+    # Stehen anfordern. Dann: Phase-Obs = 0, Gait-Rewards belohnen beide Füße am
+    # Boden, posture nutzt std_standing (0.1 -- NICHT auf 0.05, siehe CLAUDE.md).
+    for sub_name, term in self.terms.items():
+      arrived = getattr(term, "arrived", None)
+      if isinstance(arrived, torch.Tensor):
+        mask = mask | (arrived & self.active_mask(sub_name))
+    return mask
 
   @property
   def velocity_command(self) -> torch.Tensor:

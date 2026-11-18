@@ -392,7 +392,15 @@ def piplus_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
           window_s=1.0,
 
           #NEU
-          approach_foot_offset=0.0
+          approach_foot_offset=0.0,
+          # NEU Ziel: siehe KickCommandCfg in kick.py für die Bedeutung.
+          use_goal=True,  # Ziel-Modus an (im Multi-Task bleibt er aus)
+          goal_distance_range=(1.0, 2.0),  # erstmal nah, damit es in die Episode passt
+          goal_cone_deg=35.0,
+          brake_gain=1.0,
+          arrive_radius=0.2,
+          arrive_ball_speed=0.1,
+          leave_radius=0.4,
         ),
         #"stand": pi_mdp.StandCommandCfg(resampling_time_range=(2.0, 5.0)), NEU
       },
@@ -907,9 +915,23 @@ def piplus_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
       weight=0.25,
       params={"command_name": "command", "sub_command_name": "kick"},
     ),
-    "dribble_idle": RewardTermCfg(
-      func=pi_mdp.dribble_idle,
-      weight=-2.5,
+    # AUS (Ziel): dribble_idle hat einen Bug -- "dist" ist eine Geschwindigkeit,
+    # der Term bestraft also das Laufen zu einem ruhenden Ball.
+    # "dribble_idle": RewardTermCfg(
+    #   func=pi_mdp.dribble_idle,
+    #   weight=-2.5,
+    #   params={"command_name": "command", "sub_command_name": "kick"},
+    # ),
+    # NEU Ziel: Ball liegt am Ziel -> jeden Schritt Reward.
+    "dribble_ball_at_goal": RewardTermCfg(
+      func=pi_mdp.dribble_ball_at_goal,
+      weight=2.0,
+      params={"command_name": "command", "sub_command_name": "kick", "std": 0.3},
+    ),
+    # NEU Ziel: angekommen -> Roboter soll stillstehen.
+    "dribble_stand_still": RewardTermCfg(
+      func=pi_mdp.dribble_stand_still,
+      weight=1.0,
       params={"command_name": "command", "sub_command_name": "kick"},
     ),
     # "kick_idle": RewardTermCfg( #geklaut aus kick
