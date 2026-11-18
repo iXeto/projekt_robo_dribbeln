@@ -92,5 +92,5 @@ def dribble_idle( #aus kick_idle
   ball_speed = torch.norm(term.ball.data.root_link_lin_vel_w[:, :2], dim=1)
   robo_vel = term.robot.data.root_link_lin_vel_w[:, :2]
   dist = torch.sum(robo_vel * term.approach_dir_w, dim=1)
-  return ((ball_speed < vel_threshold) & (dist > near_dist)).float()
+  return ((ball_speed < vel_threshold) & (dist < near_dist)).float()
   
