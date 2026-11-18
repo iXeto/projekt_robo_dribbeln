@@ -219,6 +219,10 @@ def piplus_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
         "max_lag": BALL_DELAY_MAX,
       },
     ),
+
+    "dribble_goal_pos": ObservationTermCfg(
+      func=pi_mdp.dribble_goal_pos_b,
+    )
   }
   critic_terms = {
     **actor_terms,
@@ -934,6 +938,27 @@ def piplus_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
         "max_speed": 0.5,
         # Cubed cosine, so only a well-aimed approach gets most of the credit.
         "alignment_power": 3.0,
+      },
+    ),
+
+    #Neuer
+    "dribble_to_goal_pos": RewardTermCfg(
+    func=pi_mdp.dribble_to_goal_pos,
+    weight=0.0,
+    params={
+      "command_name": "command", 
+      "sub_command_name": "kick",
+      "std": 2.0
+      },
+    ),
+
+    "dribble_to_goal_vel": RewardTermCfg(
+    func=pi_mdp.dribble_to_goal_vel,
+    weight=0.0,
+    params={
+      "command_name": "command", 
+      "sub_command_name": "kick",
+      "max_speed": 1.5
       },
     ),
 
