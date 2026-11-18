@@ -382,7 +382,7 @@ def piplus_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
           # Widen towards 180 once kicking works to demand turning the ball.
           # direction_cone_deg=135.0, NEU
           # strength_range=(0.5, 5.0),
-          direction_cone_deg=35.0,
+          direction_cone_deg=180.0,
           strength_range=(0.3, 0.8), #Anpassen
           park_position=(100.0, 100.0),
           # Ball speed that counts as a strike, and how long the kick is scored
