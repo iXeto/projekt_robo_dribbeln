@@ -14,3 +14,4 @@ from mjlab_piplus.tasks.mdp.rewards import *
 from mjlab_piplus.tasks.mdp.symmetry import *
 from mjlab_piplus.tasks.mdp.terminations import *
 from mjlab_piplus.tasks.mdp.dribble import * #NEU
+from mjlab_piplus.tasks.mdp.path_dribble import * #new
