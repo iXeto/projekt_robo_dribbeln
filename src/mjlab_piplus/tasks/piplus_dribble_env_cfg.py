@@ -374,7 +374,7 @@ def piplus_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
           entity_name="robot",
           debug_vis=True,
           # Ein Pfad pro Runde: nicht mitten in der Runde neu wuerfeln.
-          resampling_time_range=(100.0, 100.0),
+          resampling_time_range=(10.0, 20.0),
           distance_range=(0.25, 1.0),
           placement_cone_deg=180.0,
           direction_cone_deg=180.0,  # wird vom Pfad ueberschrieben
@@ -917,7 +917,7 @@ def piplus_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     # new: Bonus, wenn der Ball am Pfadende ankommt (einmalig, Runde endet).
     "path_finished": RewardTermCfg(
       func=pi_mdp.path_finished,
-      weight=100.0,
+      weight=0.0, #test davor 100
       params={"command_name": "command", "sub_command_name": "kick"},
     ),
     # "kick_idle": RewardTermCfg( #geklaut aus kick
@@ -1170,11 +1170,11 @@ def piplus_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     ),
         # NEU: Ball am Pfadende = geschafft, Runde endet.
     # time_out=True, damit is_terminated (-200) den Erfolg NICHT bestraft.
-    "path_finished": TerminationTermCfg(
-      func=pi_mdp.path_finished,
-      time_out=True,
-      params={"command_name": "command", "sub_command_name": "kick"},
-    ),
+    #"path_finished": TerminationTermCfg(
+     # func=pi_mdp.path_finished,
+      #time_out=True,
+    #  params={"command_name": "command", "sub_command_name": "kick"},
+    #),
   }
 
   ##
