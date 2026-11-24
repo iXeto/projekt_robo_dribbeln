@@ -3,16 +3,12 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import torch
-from mjlab.managers.scene_entity_config import SceneEntityCfg #new
 
 from mjlab_piplus.tasks.mdp.kick import KickCommand
 from mjlab_piplus.tasks.mdp.multi_command import resolve_command_term
 
 if TYPE_CHECKING:
   from mjlab.envs.manager_based_rl_env import ManagerBasedRlEnv
-
-_ROBOT = SceneEntityCfg("robot")
-_BALL = SceneEntityCfg("ball")
 
 __all__ = ["ball_lost", "dribble_ball_proximity", "dribble_ball_velocity", "dribble_robot_velocity", "dribble_idle"]
 
@@ -97,23 +93,4 @@ def dribble_idle( #aus kick_idle
   robo_vel = term.robot.data.root_link_lin_vel_w[:, :2]
   dist = torch.sum(robo_vel * term.approach_dir_w, dim=1)
   return ((ball_speed < vel_threshold) & (dist < near_dist)).float()
-
-
-def ball_goal_progress(
-  env: ManagerBasedRlEnv,
-  command_name: str,
-  max_speed: float,
-  sub_command_name: str | None = None,
-  ball_cfg: SceneEntityCfg = _BALL,
-) -> torch.Tensor:
-  """Ball speed towards the goal, in m/s, capped at ``max_speed``.
-
-  Negative when the ball rolls away from the goal. Uncapped below, so pushing
-  the ball the wrong way costs as much as it would have paid the right way.
-  """
-  term, _ = resolve_goal_term(env, command_name, sub_command_name)
-  ball = env.scene[ball_cfg.name]
-  to_goal = term.goal_pos_w - ball.data.root_link_pos_w[:, :2]
-  direction = to_goal / torch.norm(to_goal, dim=1, keepdim=True).clamp_min(1e-6)
-  speed = torch.sum(ball.data.root_link_lin_vel_w[:, :2] * direction, dim=1)
-  return torch.clamp(speed, max=max_speed)
+  

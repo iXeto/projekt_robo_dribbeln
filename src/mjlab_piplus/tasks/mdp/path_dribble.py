@@ -78,6 +78,10 @@ class PathDribbleCommand(KickCommand):
     self.ball_path_dist = torch.zeros(self.num_envs, device=self.device)
     # path_done: Ball ist am Ende des Pfads angekommen.
     self.path_done = torch.zeros(self.num_envs, dtype=torch.bool, device=self.device)
+        # Einmal am Pfadende angekommen: Richtung nicht mehr aendern.
+    self._end_reached = torch.zeros(
+      self.num_envs, dtype=torch.bool, device=self.device
+    )
     # Die naechsten Pfadpunkte relativ zum Roboter (fuer die Beobachtung).
     self.path_points_b = torch.zeros(
       self.num_envs, 2 * cfg.num_path_observations, device=self.device
@@ -85,7 +89,7 @@ class PathDribbleCommand(KickCommand):
     # Neue Pfade, die noch an den Ball verschoben werden muessen.
     self._path_pending = torch.zeros(
       self.num_envs, dtype=torch.bool, device=self.device
-    )
+    )                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       
 
   def _begin_ball_life(self, env_ids: torch.Tensor) -> None:
     """Neuer Ball = neuer Pfad. Verschoben wird er erst, wenn der Ball liegt."""
@@ -97,6 +101,7 @@ class PathDribbleCommand(KickCommand):
     self.obstacles[env_ids] = self.all_obstacles[idx]
     self.path_index[env_ids] = 0
     self.path_done[env_ids] = False
+    self._end_reached[env_ids] = False
     self._path_pending[env_ids] = True
 
   def _apply_pending_placement(self) -> None:
@@ -143,7 +148,11 @@ class PathDribbleCommand(KickCommand):
     to_target = self.paths[rows, ahead] - self.ball_pos_w
     new_dir = torch.atan2(to_target[:, 1], to_target[:, 0])
     # Ganz am Ende ist der Zielpunkt fast erreicht: dann alte Richtung behalten.
-    usable = torch.norm(to_target, dim=1) > 1e-3
+       # Nahe am Pfadende: Richtung einfrieren (geradeaus weiter), statt zum
+    # Endpunkt zurueckzuzeigen.
+    near_end = torch.norm(goal - self.ball_pos_w, dim=1) < 0.5
+    self._end_reached |= near_end
+    usable = (torch.norm(to_target, dim=1) > 1e-3) & ~self._end_reached
     self.kick_dir_w = torch.where(usable, new_dir, self.kick_dir_w)
     # dir_err hat der KickCommand mit der alten Richtung berechnet: neu rechnen.
     self.dir_err = wrap_to_pi(self.kick_dir_w - self.robot.data.heading_w)
@@ -207,7 +216,7 @@ class PathDribbleCommandCfg(KickCommandCfg):
   cache_dir: str | None = None
 
   # Pfad folgen.
-  lookahead_points: int = 40
+  lookahead_points: int = 60 # war 40
   """Wie weit vorne der Zielpunkt fuer die Richtung liegt (40 x 0,01 m = 0,4 m)."""
   search_window: int = 60
   """Wie viele Punkte vor dem letzten nach dem naechsten Punkt gesucht wird."""

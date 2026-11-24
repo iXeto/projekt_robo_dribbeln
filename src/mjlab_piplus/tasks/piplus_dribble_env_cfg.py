@@ -75,13 +75,13 @@ from mjlab_piplus.tasks.mdp.footstep import (
 )
 from mjlab_piplus.tasks.mdp.multi_rewards import MultiRewardTermCfg
 from mjlab_piplus.tasks.mdp.path_following import (
-  ObstacleWorldCfg, #new
   PathCommandCfg,
   align_with_path_reward,
   close_to_path_reward,
   goal_reached_angular,
   goal_reached_linear,
   path_progress_reward,
+  ObstacleWorldCfg,
 )
 
 DELAY_MIN = 1
@@ -211,7 +211,7 @@ def piplus_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     # command. Its own term rather than part of the kick command block: it is
     # sensed, and on a camera's timescale -- the delay is applied inside the
     # term (see ``pi_mdp.ball_state``), not through delay_min_lag/delay_max_lag.
-     "ball": ObservationTermCfg(
+    "ball": ObservationTermCfg(
       func=pi_mdp.ball_state,
       params={
         "command_name": "command",
@@ -219,11 +219,6 @@ def piplus_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
         "min_lag": BALL_DELAY_MIN,
         "max_lag": BALL_DELAY_MAX,
       },
-    ),
-    # NEU: die naechsten 4 Pfadpunkte relativ zum Roboter (8 Zahlen).
-    "path": ObservationTermCfg(
-      func=pi_mdp.path_points,
-      params={"command_name": "command", "sub_command_name": "kick"},
     ),
   }
   critic_terms = {
@@ -373,17 +368,33 @@ def piplus_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
                 "kick": pi_mdp.PathDribbleCommandCfg(
           entity_name="robot",
           debug_vis=True,
-          # Ein Pfad pro Runde: nicht mitten in der Runde neu wuerfeln.
-          resampling_time_range=(10.0, 20.0),
-          distance_range=(0.25, 1.0),
+          # Long enough for several ball lives: the ball comes back after every
+          # kick, so this only bounds how long the kick task is handed out for.
+          resampling_time_range=(8.0, 16.0), #NEU
+          #resampling_time_range=(100.0, 100.0),
+          # Placed within a 60 degree fan either side of where the robot is
+          # facing, at most 1.2 m away whatever the bearing.
+          # distance_range=(0.3, 1.2), NEU
+          # placement_cone_deg=60.0,
+          distance_range=(0.25, 1.0), #Anpassen
           placement_cone_deg=180.0,
-          direction_cone_deg=180.0,  # wird vom Pfad ueberschrieben
-          strength_range=(0.3, 0.8),
+          # Target direction within this cone of the robot's heading at
+          # placement -- a direction it can plausibly hit from where it stands.
+          # Widen towards 180 once kicking works to demand turning the ball.
+          # direction_cone_deg=135.0, NEU
+          # strength_range=(0.5, 5.0),
+          direction_cone_deg=180.0,
+          strength_range=(0.3, 0.8), #Anpassen
           park_position=(100.0, 100.0),
+          # Ball speed that counts as a strike, and how long the kick is scored
+          # for afterwards before the ball is re-placed.
+          #contact_speed=0.5, NEU
           contact_speed=100.0,
           window_s=1.0,
+
+          #NEU
           approach_foot_offset=0.0,
-          # STUFE 1: keine Hindernisse, also gerade Pfade von 2-4 m.
+          # PFAD Stufe 1: gerade Pfade (keine Hindernisse), 2-4 m lang.
           obstacle_world=ObstacleWorldCfg(
             density_range=(0.0, 0.0),
             max_straight_fraction=1.0,
@@ -908,18 +919,6 @@ def piplus_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
       weight=-2.5,
       params={"command_name": "command", "sub_command_name": "kick"},
     ),
-        # new: Ball soll auf dem Pfad bleiben (0..1).
-    "ball_on_path": RewardTermCfg(
-      func=pi_mdp.ball_on_path,
-      weight=2.0,
-      params={"command_name": "command", "sub_command_name": "kick", "std": 0.3},
-    ),
-    # new: Bonus, wenn der Ball am Pfadende ankommt (einmalig, Runde endet).
-    "path_finished": RewardTermCfg(
-      func=pi_mdp.path_finished,
-      weight=0.0, #test davor 100
-      params={"command_name": "command", "sub_command_name": "kick"},
-    ),
     # "kick_idle": RewardTermCfg( #geklaut aus kick
     #   func=pi_mdp.kick_idle,
     #   # Kills the do-nothing optimum: standing still with a ball to fetch has to
@@ -1168,13 +1167,6 @@ def piplus_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
       func=pi_mdp.ball_lost,
       params={"command_name": "command", "sub_command_name": "kick"},
     ),
-        # NEU: Ball am Pfadende = geschafft, Runde endet.
-    # time_out=True, damit is_terminated (-200) den Erfolg NICHT bestraft.
-    #"path_finished": TerminationTermCfg(
-     # func=pi_mdp.path_finished,
-      #time_out=True,
-    #  params={"command_name": "command", "sub_command_name": "kick"},
-    #),
   }
 
   ##
@@ -1314,7 +1306,7 @@ def piplus_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     # sinking through the floor, so re-measure before trimming further -- and
     # raise it again for anything that puts the robot on the ground on purpose,
     # or for terrain that is not a plane.
-    nconmax=60,
+    nconmax=45,
     njmax=200,
     # contact_sensor_maxmatch=500,
     mujoco=MujocoCfg(
