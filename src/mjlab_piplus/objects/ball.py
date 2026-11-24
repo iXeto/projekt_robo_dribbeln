@@ -31,6 +31,7 @@ def get_ball_spec(
   spec = mujoco.MjSpec()
   body = spec.worldbody.add_body(name="ball")
   body.add_freejoint(name="ball_root")
+  body.add_site(name="ball_center") # NEU -> Ball mitte als messpunkt für den Pfad
   body.add_geom(
     name="ball_collision",
     type=mujoco.mjtGeom.mjGEOM_SPHERE,
