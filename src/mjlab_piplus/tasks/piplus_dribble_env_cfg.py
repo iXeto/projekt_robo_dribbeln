@@ -219,6 +219,10 @@ def piplus_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
         "max_lag": BALL_DELAY_MAX,
       },
     ),
+      "path": ObservationTermCfg( #NEU 
+        func=mdp.generated_commands,
+        params={"command_name": "path"},
+    ),
   }
   critic_terms = {
     **actor_terms,
@@ -396,7 +400,17 @@ def piplus_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
         ),
         #"stand": pi_mdp.StandCommandCfg(resampling_time_range=(2.0, 5.0)), NEU
       },
-    ) 
+    ),
+    "path": PathCommandCfg( #NEU -> von Multi außerhalb von command, damit es gleichzeitig ist
+      entity_name="robot",
+      debug_vis=True,
+      resampling_time_range=(10.0, 20.0),
+      num_observations=NUM_PATH_OBSERVATIONS,
+      # A path can be handed to a robot that is already mid-episode and away from
+      # its spawn, so anchor each new path at the robot's current position.
+      align=True,
+      pathlib_size=2000,
+    ),
   }
 
   ##
