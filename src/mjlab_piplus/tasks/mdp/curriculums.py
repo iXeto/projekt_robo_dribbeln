@@ -54,9 +54,12 @@ def reward_weight(
 
 def commands_spawning_conditions(
   env: ManagerBasedRlEnv,
+  env_ids: torch.Tensor,
   command_name: str,
   placement_cone_degrees: list[SpawnConditionStage],
 ) -> dict[str, torch.Tensor]:
+
+  del env_ids  # Unused.
   
   command_term = env.command_manager.get_term(command_name)
   assert command_term is not None
