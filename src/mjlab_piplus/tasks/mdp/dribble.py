@@ -158,7 +158,6 @@ def dribble_close_to_path(
   command_name: str = "path",
   std: float = 0.35,
 ) -> torch.Tensor:
-  """Belohnt, wenn der BALL nah an der A*-Pfadlinie bleibt."""
   cmd = _path(env, command_name)
   ball_xy = _ball_xy(env)
   dists = torch.norm(cmd.paths[..., :2] - ball_xy.unsqueeze(1), dim=-1)
@@ -171,7 +170,6 @@ def dribble_goal_reached(
   command_name: str = "path",
   pos_std: float = 0.25,
 ) -> torch.Tensor:
-  """Belohnt, wenn der BALL den letzten Wegpunkt (Ziel) erreicht."""
   cmd = _path(env, command_name)
   ball_xy = _ball_xy(env)
   dist = torch.norm(cmd.goal_pos_w - ball_xy, dim=-1)
@@ -181,10 +179,6 @@ def dribble_goal_reached(
 def _obstacle_sdf_gpu(
   pts_xy: torch.Tensor, obstacles: torch.Tensor
 ) -> tuple[torch.Tensor, torch.Tensor]:
-  """Vektorisierte GPU-SDF zu allen aktiven Hindernissen (B, M, 7).
-
-  Gibt (min_dist (B,), nearest_vec_w (B, 2)) zurück.
-  """
   kind = obstacles[..., 0]  # (B, M)
   ox = obstacles[..., 1]
   oy = obstacles[..., 2]
@@ -228,9 +222,6 @@ def dribble_obstacle_penalty(
   robot_margin: float = 0.22,
   ball_margin: float = 0.11,
 ) -> torch.Tensor:
-  """Bestraft (positiver Cost -> mit negativem Gewicht nutzen), sobald Roboter
-  oder Ball ein virtuelles Hindernis berühren oder dessen Sicherheitsradius
-  unterschreiten."""
   cmd = _path(env, command_name)
   robot_xy = env.scene["robot"].data.root_link_pos_w[:, :2]
   ball_xy = _ball_xy(env)
@@ -250,7 +241,6 @@ def nearest_obstacle_obs_b(
   command_name: str = "path",
   max_range: float = 2.5,
 ) -> torch.Tensor:
-  """Observation [dx_b, dy_b, surface_dist] zum nächsten Hindernis im Base-Frame."""
   cmd = _path(env, command_name)
   robot = env.scene["robot"]
   robot_xy = robot.data.root_link_pos_w[:, :2]
