@@ -179,15 +179,15 @@ def dribble_goal_reached(
 def _obstacle_sdf_gpu(
   pts_xy: torch.Tensor, obstacles: torch.Tensor
 ) -> tuple[torch.Tensor, torch.Tensor]:
-  kind = obstacles[..., 0]  # (B, M)
+  kind = obstacles[..., 0]  
   ox = obstacles[..., 1]
   oy = obstacles[..., 2]
   yaw = obstacles[..., 3]
   a = obstacles[..., 4]
   b = obstacles[..., 5]
 
-  dx = pts_xy[:, 0:1] - ox  # (B, M)
-  dy = pts_xy[:, 1:2] - oy  # (B, M)
+  dx = pts_xy[:, 0:1] - ox  
+  dy = pts_xy[:, 1:2] - oy  
 
   dist_cyl = torch.hypot(dx, dy) - a
 
@@ -206,7 +206,7 @@ def _obstacle_sdf_gpu(
   dist = torch.where(is_cyl, dist_cyl, dist_box)
   dist = torch.where(is_valid, dist, torch.full_like(dist, float("inf")))
 
-  min_dist, min_idx = torch.min(dist, dim=1)  # (B,)
+  min_dist, min_idx = torch.min(dist, dim=1)  
   batch_idx = torch.arange(pts_xy.shape[0], device=pts_xy.device)
   nearest_ox = ox[batch_idx, min_idx]
   nearest_oy = oy[batch_idx, min_idx]
