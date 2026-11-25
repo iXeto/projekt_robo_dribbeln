@@ -1244,7 +1244,7 @@ def piplus_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
       func=pi_mdp.commands_spawning_conditions,
       params={
         "command_name": "kick",
-        "velocity_stages": [
+        "placement_cone_degrees": [
           {
             "step": 100 * 24,
             "placement_cone_deg": 180.0,
