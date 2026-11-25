@@ -189,10 +189,8 @@ def _obstacle_sdf_gpu(
   dx = pts_xy[:, 0:1] - ox  # (B, M)
   dy = pts_xy[:, 1:2] - oy  # (B, M)
 
-  # Zylinder-Abstand
   dist_cyl = torch.hypot(dx, dy) - a
 
-  # Rotierter-Quader-Abstand (identisch zu path_gen_astar._obstacle_distance)
   cos_y = torch.cos(yaw)
   sin_y = torch.sin(yaw)
   local_x = torch.abs(cos_y * dx + sin_y * dy) - a
@@ -231,7 +229,6 @@ def dribble_obstacle_penalty(
 
   robot_pen = torch.clamp(robot_margin - robot_dist, min=0.0)
   ball_pen = torch.clamp(ball_margin - ball_dist, min=0.0)
-  # Berührung + Eindringtiefe bestrafen
   touched = ((robot_dist < robot_margin) | (ball_dist < ball_margin)).float()
   return touched + 5.0 * (robot_pen + ball_pen)
 
@@ -247,7 +244,6 @@ def nearest_obstacle_obs_b(
   heading = heading_from_quat(robot.data.root_link_quat_w)
 
   min_dist, vec_w = _obstacle_sdf_gpu(robot_xy, cmd.obstacles)
-  # Falls gar kein Hindernis existiert (inf), auf max_range setzen
   no_obs = torch.isinf(min_dist)
   vec_w = torch.where(no_obs.unsqueeze(1), torch.full_like(vec_w, max_range), vec_w)
   surface_dist = torch.clamp(min_dist, min=-1.0, max=max_range)
