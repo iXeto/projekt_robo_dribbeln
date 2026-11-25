@@ -956,12 +956,12 @@ def piplus_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     ),
     "close_to_path_reward": RewardTermCfg( #NEU
       func=close_to_path_reward,
-      weight=1.0,
+      weight=2.0,
       params={
         "command_name": "path",
         "asset_cfg": base_cfg,
         "foot_asset_cfg": ball_site_cfg, #Neu nicht foot, sondern ball
-        "std": math.sqrt(0.25),
+        "std": math.sqrt(0.1),
       },
     ),
     "path_progress_reward": RewardTermCfg( #NEU
