@@ -974,6 +974,18 @@ def piplus_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
         # Reward is progress speed in m/s, capped here (no bonus above this).
         "max_speed": 0.7,
       },
+    ),
+    "goal_reached_linear_reward": RewardTermCfg( #NEU
+      func=goal_reached_linear,
+      weight=2.0,
+      params={
+        "command_name": "path",
+        "metric_prefix": "path_goal",
+        "asset_cfg": base_cfg,
+        "foot_asset_cfg": ball_site_cfg, #Neu nicht foot, sondern ball
+        "pos_std": 0.25,  # Gaussian width on goal distance (m).
+        "success_threshold": 0.05,  # logged success-rate metric only.
+      },
     )
 
 
