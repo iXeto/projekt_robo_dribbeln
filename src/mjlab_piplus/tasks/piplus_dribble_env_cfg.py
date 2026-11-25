@@ -74,13 +74,13 @@ from mjlab_piplus.tasks.mdp.footstep import (
   footstep_tracking_z,
 )
 from mjlab_piplus.tasks.mdp.multi_rewards import MultiRewardTermCfg
+
+#NEW
+
 from mjlab_piplus.tasks.mdp.path_following import (
+  ObstacleWorldCfg,
   PathCommandCfg,
   align_with_path_reward,
-  close_to_path_reward,
-  goal_reached_angular,
-  goal_reached_linear,
-  path_progress_reward,
 )
 
 DELAY_MIN = 1
@@ -219,6 +219,17 @@ def piplus_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
         "max_lag": BALL_DELAY_MAX,
       },
     ),
+
+  #NEW
+
+    "path": ObservationTermCfg(
+      func=mdp.generated_commands,
+      params={"command_name": "path"},
+    ),
+    "nearest_obstacle": ObservationTermCfg(
+      func=pi_mdp.nearest_obstacle_obs_b,
+      params={"command_name": "path"},
+    ),
   }
   critic_terms = {
     **actor_terms,
@@ -283,16 +294,21 @@ def piplus_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
   # resample from the *selected* sub-command's own ``resampling_time_range``:
   # velocity re-rolls every few seconds, a path gets long enough to be walked,
   # a stand gets a short dwell.
-  # path_cfg = PathCommandCfg( NEU
-  #   entity_name="robot",
-  #   debug_vis=True,
-  #   resampling_time_range=(10.0, 20.0),
-  #   num_observations=NUM_PATH_OBSERVATIONS,
-  #   # A path can be handed to a robot that is already mid-episode and away from
-  #   # its spawn, so anchor each new path at the robot's current position.
-  #   align=True,
-  #   pathlib_size=2000,
-  # )
+
+#NEW
+
+  path_cfg = PathCommandCfg(
+    entity_name="robot",
+    debug_vis=True,
+    resampling_time_range=(10.0, 20.0),
+    num_observations=NUM_PATH_OBSERVATIONS,
+    align=True,
+    pathlib_size=2000,
+    obstacle_world=ObstacleWorldCfg(
+      inflation_radius=0.55,
+      smoothing_clearance=0.40,
+    ),
+  )
 
   # A timed footstep plan: where the next few footfalls go, relative to where
   # each foot rests in the default stance. Half its scenarios read the footsteps
@@ -396,7 +412,8 @@ def piplus_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
         ),
         #"stand": pi_mdp.StandCommandCfg(resampling_time_range=(2.0, 5.0)), NEU
       },
-    ) 
+    ),
+    "path": path_cfg,
   }
 
   ##
@@ -882,14 +899,53 @@ def piplus_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
   # }
 
   dribble_rewards = { #NEU
+    
+#NEW
+
+    "dribble_path_progress": RewardTermCfg(
+      func=pi_mdp.dribble_path_progress,
+      weight=2.5,
+      params={"command_name": "path", "max_speed": MAX_COMMANDED_SPEED},
+    ),
+    "dribble_close_to_path": RewardTermCfg(
+      func=pi_mdp.dribble_close_to_path,
+      weight=1.5,
+      params={"command_name": "path", "std": 0.35},
+    ),
+    "dribble_goal_reached": RewardTermCfg(
+      func=pi_mdp.dribble_goal_reached,
+      weight=2.0,
+      params={"command_name": "path", "pos_std": 0.25},
+    ),
+    "alignment_with_path_reward": RewardTermCfg(
+      func=align_with_path_reward,
+      weight=0.75,
+      params={
+        "command_name": "path",
+        "asset_cfg": base_cfg,
+        "foot_asset_cfg": foot_asset_cfg,
+        "std": math.sqrt(1.0),
+      },
+    ),
+    "dribble_obstacle_penalty": RewardTermCfg(
+      func=pi_mdp.dribble_obstacle_penalty,
+      weight=-2.0,
+      params={
+        "command_name": "path",
+        "robot_margin": 0.22,
+        "ball_margin": 0.11,
+      },
+    ),
+
+
     "dribble_ball_velocity": RewardTermCfg(
       func=pi_mdp.dribble_ball_velocity,
-      weight= 3.0,
+      weight= 0.0,#NEW
       params={"command_name": "command", "sub_command_name": "kick"}
     ),
     "dribble_robot_velocity": RewardTermCfg(
       func=pi_mdp.dribble_robot_velocity,
-      weight= 1.0,
+      weight= 0.0, #NEW
       params={"command_name": "command", "sub_command_name": "kick"}
     ),
     # "dribble_ball_still": RewardTermCfg(
@@ -909,7 +965,7 @@ def piplus_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     ),
     "dribble_idle": RewardTermCfg(
       func=pi_mdp.dribble_idle,
-      weight=-2.5,
+      weight=-0.0, #NEW
       params={"command_name": "command", "sub_command_name": "kick"},
     ),
     # "kick_idle": RewardTermCfg( #geklaut aus kick
@@ -1314,6 +1370,10 @@ def piplus_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
 
   if play:
     scene.num_envs = 1
+
+#NEW
+
+    path_cfg.pathlib_size = 200
     events = {  # remove other dr in play mode
       "reset_base": events["reset_base"],
       "reset_robot_joints": events["reset_robot_joints"],
