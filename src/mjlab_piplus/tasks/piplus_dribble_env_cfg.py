@@ -373,7 +373,7 @@ def piplus_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
           debug_vis=True,
           # Long enough for several ball lives: the ball comes back after every
           # kick, so this only bounds how long the kick task is handed out for.
-          resampling_time_range=(8.0, 16.0), #NEU
+          resampling_time_range=(15.0, 25.0), #NEU
           #resampling_time_range=(100.0, 100.0),
           # Placed within a 60 degree fan either side of where the robot is
           # facing, at most 1.2 m away whatever the bearing.
@@ -404,7 +404,7 @@ def piplus_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     "path": PathCommandCfg( #NEU -> von Multi außerhalb von command, damit es gleichzeitig ist
       entity_name="robot",
       debug_vis=True,
-      resampling_time_range=(10.0, 20.0),
+      resampling_time_range=(15.0, 25.0),
       num_observations=NUM_PATH_OBSERVATIONS,
       # A path can be handed to a robot that is already mid-episode and away from
       # its spawn, so anchor each new path at the robot's current position.
@@ -908,7 +908,7 @@ def piplus_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     "dribble_robot_velocity": RewardTermCfg(
       func=pi_mdp.dribble_robot_velocity,
       weight= 1.0,
-      params={"command_name": "command", "sub_command_name": "kick", "path_command_name": "path","goal_radius": 0.3,}
+      params={"command_name": "command", "sub_command_name": "kick", "path_command_name": "path","goal_radius": 0.5,}
     ),
     # "dribble_ball_still": RewardTermCfg(
     #   func=pi_mdp.dribble_ball_still,
@@ -928,7 +928,7 @@ def piplus_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     "dribble_idle": RewardTermCfg(
       func=pi_mdp.dribble_idle,
       weight=-2.5,
-      params={"command_name": "command", "sub_command_name": "kick","path_command_name": "path","goal_radius": 0.3,},
+      params={"command_name": "command", "sub_command_name": "kick","path_command_name": "path","goal_radius": 0.5,},
     ),
     # "kick_idle": RewardTermCfg( #geklaut aus kick
     #   func=pi_mdp.kick_idle,
@@ -977,13 +977,13 @@ def piplus_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     ),
     "goal_reached_linear_reward": RewardTermCfg( #NEU
       func=goal_reached_linear,
-      weight=2.0,
+      weight=3.0,
       params={
         "command_name": "path",
         "metric_prefix": "path_goal",
         "asset_cfg": base_cfg,
         "foot_asset_cfg": ball_site_cfg, #Neu nicht foot, sondern ball
-        "pos_std": 0.25,  # Gaussian width on goal distance (m).
+        "pos_std": 0.5,  # Gaussian width on goal distance (m).
         "success_threshold": 0.05,  # logged success-rate metric only.
       },
     )

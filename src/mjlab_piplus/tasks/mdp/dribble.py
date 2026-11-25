@@ -37,7 +37,7 @@ def dribble_robot_velocity(
   sub_command_name: str | None = None,
   std: float = 0.25,
   path_command_name: str | None = None,
-  goal_radius: float = 0.3,
+  goal_radius: float = 0.5,
 ) -> torch.Tensor:
   """``exp(-|v_ball - v_target|^2 / std^2)``: the robot rolls as commanded."""
   term = _kick(env, command_name, sub_command_name)
@@ -96,7 +96,7 @@ def dribble_idle( #aus kick_idle
   vel_threshold: float = 0.1,
   near_dist: float = 0.2,
   path_command_name: str | None = None,
-  goal_radius: float = 0.3,
+  goal_radius: float = 0.5,
 ) -> torch.Tensor:
   """ bestraft wenn der Ball still liegt und er nicht zum Ball geht.
   Aus, sobald der Ball näher als ``goal_radius`` am Pfad-Ziel liegt.
