@@ -896,14 +896,13 @@ def piplus_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
   # }
 
 
-  # Path rewards evaluate the robot's position at the base footprint (the ground
-  # midpoint between the two feet), so ``foot_asset_cfg`` carries the foot sites.
+  # Path rewards evaluate the balls position
   ball_site_cfg = SceneEntityCfg("ball", site_names=("ball_center",)) # NEU aus path um ball punkt zu sehen
 
   dribble_rewards = { #NEU
     "dribble_ball_velocity": RewardTermCfg(
       func=pi_mdp.dribble_ball_velocity,
-      weight= 3.0,
+      weight= 0.0,
       params={"command_name": "command", "sub_command_name": "kick"}
     ),
     "dribble_robot_velocity": RewardTermCfg(
@@ -964,7 +963,6 @@ def piplus_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
         "foot_asset_cfg": ball_site_cfg, #Neu nicht foot, sondern ball
         "std": math.sqrt(0.25),
       },
-      command_weights=PATH_ONLY,
     ),
     "path_progress_reward": RewardTermCfg( #NEU
       func=path_progress_reward,
@@ -976,7 +974,6 @@ def piplus_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
         # Reward is progress speed in m/s, capped here (no bonus above this).
         "max_speed": 0.7,
       },
-      command_weights=PATH_ONLY,
     )
 
 
