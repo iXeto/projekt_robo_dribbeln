@@ -380,7 +380,7 @@ def piplus_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
           # distance_range=(0.3, 1.2), NEU
           # placement_cone_deg=60.0,
           distance_range=(0.25, 1.0), #Anpassen
-          placement_cone_deg=60.0,
+          placement_cone_deg=180.0, #FP
           # Target direction within this cone of the robot's heading at
           # placement -- a direction it can plausibly hit from where it stands.
           # Widen towards 180 once kicking works to demand turning the ball.
@@ -956,7 +956,9 @@ def piplus_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     ),
     "close_to_path_reward": RewardTermCfg( #NEU
       func=close_to_path_reward,
+
       weight=2.0,
+
       params={
         "command_name": "path",
         "asset_cfg": base_cfg,
@@ -1240,6 +1242,31 @@ def piplus_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     #     "end_value": KICK_DIR_SIGMA_END,
     #   },
     # ),
+    "command_spawning_ball_conditions": CurriculumTermCfg(
+      func=pi_mdp.commands_spawning_conditions,
+      params={
+        "command_name": "command",
+        "sub_command_name": "kick",
+        "placement_cone_degrees": [
+          {
+            "step": 0 * 24,
+            "placement_cone_deg": 60.0,
+          },
+          {
+            "step": 400 * 24,
+            "placement_cone_deg": 90.0,
+          },
+          {
+            "step": 800 * 24,
+            "placement_cone_deg": 120.0,
+          },
+          {
+            "step": 1000 * 24,
+            "placement_cone_deg": 180.0,
+          },
+        ],
+      },
+    ),
   }
 
   ##

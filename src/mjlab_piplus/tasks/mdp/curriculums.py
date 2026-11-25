@@ -9,7 +9,10 @@ from mjlab_piplus.tasks.mdp.commands import (
   GoalPoseCommandCfg,
   UniformVelocityCommandWithStopCfg,
 )
+from mjlab_piplus.tasks.mdp.kick import KickCommandCfg
 from mjlab_piplus.tasks.mdp.multi_command import MultiCommand
+
+#from mjlab_piplus.tasks.mdp.multi_command import MultiCommand, resolve_command_term #FP
 
 if TYPE_CHECKING:
   from mjlab.envs import ManagerBasedRlEnv
@@ -23,6 +26,7 @@ __all__ = [
   "reward_weight",
   "reward_param_linear",
   "commands_vel_multi",
+  "commands_spawning_conditions",
 ]
 
 
@@ -50,6 +54,30 @@ def reward_weight(
       reward_term_cfg.weight = stage["weight"]
   return torch.tensor([reward_term_cfg.weight])
 
+def commands_spawning_conditions(
+  env: ManagerBasedRlEnv,
+  env_ids: torch.Tensor,
+  command_name: str,
+  sub_command_name: str,
+  placement_cone_degrees: list[SpawnConditionStage],
+) -> dict[str, torch.Tensor]:
+
+  del env_ids  # Unused.
+  multi = env.command_manager.get_term(command_name)
+  assert isinstance(multi, MultiCommand), (
+    f"Command '{command_name}' is not a MultiCommand."
+  )
+
+  command_term = env.command_manager.get_term(command_name)
+  assert command_term is not None
+  #cfg = cast(KickCommandCfg, command_term.cfg)
+  cfg = cast(KickCommandCfg, multi.terms[sub_command_name].cfg)
+  for stage in placement_cone_degrees:
+    if env.common_step_counter >= stage["step"]:
+      cfg.placement_cone_deg = stage["placement_cone_deg"]
+  return {
+    "placement_cone_deg": torch.tensor(cfg.placement_cone_deg),
+  }
 
 def reward_param_linear(
   env: ManagerBasedRlEnv,
@@ -86,6 +114,9 @@ def reward_param_linear(
     env.reward_manager.get_term_cfg(name).params[param_name] = value
   return torch.tensor(value)
 
+class SpawnConditionStage(TypedDict):
+  step: int
+  placement_cone_degree: float
 
 class GoalRadiusStage(TypedDict):
   step: int
