@@ -908,7 +908,7 @@ def piplus_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     "dribble_robot_velocity": RewardTermCfg(
       func=pi_mdp.dribble_robot_velocity,
       weight= 1.0,
-      params={"command_name": "command", "sub_command_name": "kick"}
+      params={"command_name": "command", "sub_command_name": "kick", "path_command_name": "path","goal_radius": 0.3,}
     ),
     # "dribble_ball_still": RewardTermCfg(
     #   func=pi_mdp.dribble_ball_still,
@@ -928,7 +928,7 @@ def piplus_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     "dribble_idle": RewardTermCfg(
       func=pi_mdp.dribble_idle,
       weight=-2.5,
-      params={"command_name": "command", "sub_command_name": "kick"},
+      params={"command_name": "command", "sub_command_name": "kick","path_command_name": "path","goal_radius": 0.3,},
     ),
     # "kick_idle": RewardTermCfg( #geklaut aus kick
     #   func=pi_mdp.kick_idle,
