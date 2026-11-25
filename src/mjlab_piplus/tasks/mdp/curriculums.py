@@ -12,6 +12,8 @@ from mjlab_piplus.tasks.mdp.commands import (
 from mjlab_piplus.tasks.mdp.kick import KickCommandCfg
 from mjlab_piplus.tasks.mdp.multi_command import MultiCommand
 
+#from mjlab_piplus.tasks.mdp.multi_command import MultiCommand, resolve_command_term #FP
+
 if TYPE_CHECKING:
   from mjlab.envs import ManagerBasedRlEnv
 
@@ -56,14 +58,20 @@ def commands_spawning_conditions(
   env: ManagerBasedRlEnv,
   env_ids: torch.Tensor,
   command_name: str,
+  sub_command_name: str,
   placement_cone_degrees: list[SpawnConditionStage],
 ) -> dict[str, torch.Tensor]:
 
   del env_ids  # Unused.
-  
+  multi = env.command_manager.get_term(command_name)
+  assert isinstance(multi, MultiCommand), (
+    f"Command '{command_name}' is not a MultiCommand."
+  )
+
   command_term = env.command_manager.get_term(command_name)
   assert command_term is not None
-  cfg = cast(KickCommandCfg, command_term.cfg)
+  #cfg = cast(KickCommandCfg, command_term.cfg)
+  cfg = cast(KickCommandCfg, multi.terms[sub_command_name].cfg)
   for stage in placement_cone_degrees:
     if env.common_step_counter >= stage["step"]:
       cfg.placement_cone_deg = stage["placement_cone_deg"]

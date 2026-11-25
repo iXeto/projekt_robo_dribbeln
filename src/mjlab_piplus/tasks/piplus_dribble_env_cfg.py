@@ -1243,7 +1243,8 @@ def piplus_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     "command_spawning_ball_conditions": CurriculumTermCfg(
       func=pi_mdp.commands_spawning_conditions,
       params={
-        "command_name": "kick",
+        "command_name": "command",
+        "sub_command_name": "kick",
         "placement_cone_degrees": [
           {
             "step": 100 * 24,
