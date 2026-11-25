@@ -9,7 +9,6 @@ from mjlab_piplus.tasks.mdp.commands import (
   GoalPoseCommandCfg,
   UniformVelocityCommandWithStopCfg,
 )
-from mjlab_piplus.tasks.mdp.curriculums import SpawnConditionStage
 from mjlab_piplus.tasks.mdp.kick import KickCommandCfg
 from mjlab_piplus.tasks.mdp.multi_command import MultiCommand
 
