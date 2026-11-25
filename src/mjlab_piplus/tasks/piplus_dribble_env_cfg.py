@@ -1247,7 +1247,7 @@ def piplus_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
         "sub_command_name": "kick",
         "placement_cone_degrees": [
           {
-            "step": 100 * 24,
+            "step": 300 * 24,
             "placement_cone_deg": 180.0,
           },
         ],
