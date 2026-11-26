@@ -917,7 +917,7 @@ def piplus_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     # ),    
     "dribble_ball_proximity": RewardTermCfg(
       func=pi_mdp.dribble_ball_proximity,
-      weight=0.75,
+      weight=0.25,
       params={"command_name": "command", "sub_command_name": "kick"}
     ),
     "kick_face_ball": RewardTermCfg( #geklaut aus kick
@@ -1261,7 +1261,11 @@ def piplus_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
             "placement_cone_deg": 120.0,
           },
           {
-            "step": 1000 * 24,
+            "step": 1200 * 24,
+            "placement_cone_deg": 150.0,
+          },
+          {
+            "step": 1600 * 24,
             "placement_cone_deg": 180.0,
           },
         ],
