@@ -373,7 +373,7 @@ def piplus_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
           debug_vis=True,
           # Long enough for several ball lives: the ball comes back after every
           # kick, so this only bounds how long the kick task is handed out for.
-          resampling_time_range=(15.0, 25.0), #NEU
+          resampling_time_range=(8.0, 16.0), #NEU
           #resampling_time_range=(100.0, 100.0),
           # Placed within a 60 degree fan either side of where the robot is
           # facing, at most 1.2 m away whatever the bearing.
@@ -404,7 +404,7 @@ def piplus_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     "path": PathCommandCfg( #NEU -> von Multi außerhalb von command, damit es gleichzeitig ist
       entity_name="robot",
       debug_vis=True,
-      resampling_time_range=(15.0, 25.0),
+      resampling_time_range=(8.0, 16.0),
       num_observations=NUM_PATH_OBSERVATIONS,
       # A path can be handed to a robot that is already mid-episode and away from
       # its spawn, so anchor each new path at the robot's current position.
@@ -917,7 +917,7 @@ def piplus_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     # ),    
     "dribble_ball_proximity": RewardTermCfg(
       func=pi_mdp.dribble_ball_proximity,
-      weight=0.5,
+      weight=0.75,
       params={"command_name": "command", "sub_command_name": "kick"}
     ),
     "kick_face_ball": RewardTermCfg( #geklaut aus kick
@@ -968,13 +968,13 @@ def piplus_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     ),
     "path_progress_reward": RewardTermCfg( #NEU
       func=path_progress_reward,
-      weight=3.0,
+      weight=2.0,
       params={
         "command_name": "path",
         "asset_cfg": base_cfg,
         "foot_asset_cfg": ball_site_cfg, #Neu nicht foot, sondern ball
         # Reward is progress speed in m/s, capped here (no bonus above this).
-        "max_speed": 0.7,
+        "max_speed": 0.8,
       },
     ),
     "goal_reached_linear_reward": RewardTermCfg( #NEU
@@ -1254,22 +1254,10 @@ def piplus_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
           },
           {
             "step": 400 * 24,
-            "placement_cone_deg": 90.0,
-          },
-          {
-            "step": 800 * 24,
             "placement_cone_deg": 120.0,
           },
           {
-            "step": 1100 * 24,
-            "placement_cone_deg": 140.0,
-          },
-          {
-            "step": 1400 * 24,
-            "placement_cone_deg": 160.0,
-          },
-          {
-            "step": 1800 * 24,
+            "step": 800 * 24,
             "placement_cone_deg": 180.0,
           },
         ],
