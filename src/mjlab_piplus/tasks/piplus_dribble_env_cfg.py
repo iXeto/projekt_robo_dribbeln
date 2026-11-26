@@ -1254,7 +1254,7 @@ def piplus_dribble_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
           },
           {
             "step": 400 * 24,
-            "placement_cone_deg": 120.0,
+            "placement_cone_deg": 120.0, 
           },
           {
             "step": 800 * 24,
